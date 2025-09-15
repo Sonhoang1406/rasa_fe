@@ -1,6 +1,6 @@
 import { IntentRequest, IntentResponse, Intent } from "@/lib/types/intent-type"
-import axiosInstance from "../axios"
-import { INTENT_ENPOINTS } from "../endpoints"
+import axiosInstance from "@/api/axios"
+import { INTENT_ENPOINTS } from "@/lib/api/endpoints"
 
 export const intentService = {
     getall : async (query: string) : Promise<any> =>  {

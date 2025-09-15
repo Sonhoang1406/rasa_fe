@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { authService } from "../lib/api/services/auth-service";
+import { authService } from "@/features/auth/api/service";
 import type { RegisterRequest } from "../lib/types/auth-type";
 
 export const useRegister = () => {
