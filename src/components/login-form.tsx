@@ -19,7 +19,7 @@ export function LoginForm({
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
   const { login } = useAuth();
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export function LoginForm({
     setError(null);
 
     try {
-      await login({ usernameOrEmail, password });
+      await login({ email, password });
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
@@ -76,13 +76,13 @@ export function LoginForm({
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="usernameOrEmail">Email or Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="usernameOrEmail"
+                  id="email"
                   type="text"
                   placeholder="m@example.com or johndoe"
-                  value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />

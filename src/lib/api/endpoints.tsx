@@ -1,5 +1,5 @@
 export const AUTH_ENDPOINTS = {
-  LOGIN: "/users/login",
+  LOGIN: "api/v1/auth/login",
   REGISTER: "/users/register",
   FORGOT_PASSWORD: "/users/forgot-password",
   RESET_PASSWORD: "/users/reset-password",
