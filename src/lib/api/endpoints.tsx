@@ -9,7 +9,7 @@ export const AUTH_ENDPOINTS = {
 };
 
 export const USER_ENDPOINTS = {
-  PROFILE: "/users",
+  PROFILE: "v1/auth/me",
   CHANGE_PASSWORD: "/users/password",
   UPDATE_AVATAR: "/users/avatar",
   UPDATE_PASSWORD: "/users/password",

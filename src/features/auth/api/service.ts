@@ -14,8 +14,13 @@ import type {
 export const authService = {
   // Đăng nhập
   login: async (data: any): Promise<any> => {
-    const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN, data)
-    return response.data?.data ?? response.data
+    const response = await axiosInstance.post(AUTH_ENDPOINTS.LOGIN, data, {
+      headers: {
+        'x-platform': 'WEB',
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.data?.data ?? response.data;
   },
   //logout
   logout: async (): Promise<void> => {

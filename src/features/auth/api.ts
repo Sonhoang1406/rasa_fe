@@ -4,7 +4,12 @@ import type { LoginRequest, RegisterRequest, AuthResponse, User } from './types'
 export const authApi = {
   // Đăng nhập
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post('/auth/login', data);
+    const response = await api.post('/auth/login', data, {
+      headers: {
+        'x-platform': 'WEB',
+        'Content-Type': 'application/json',
+      },
+    });
     return response.data;
   },
 

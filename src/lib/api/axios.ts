@@ -21,6 +21,7 @@ const axiosInstance = axios.create({
   withCredentials: true, // Dùng cookie để gửi/nhận token
   headers: {
     "Content-Type": "application/json",
+    'x-platform': 'web'
   },
 });
 
