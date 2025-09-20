@@ -11,13 +11,16 @@ import { ADMIN_ENDPOINTS, USER_ENDPOINTS } from "../endpoints";
 export const userService = {
   // Lấy thông tin profile
   getProfile: async (): Promise<UserProfile> => {
-    const response = await axiosInstance.get(USER_ENDPOINTS.PROFILE);
+    const response = await axiosInstance.get(USER_ENDPOINTS.PROFILE, {
+      headers: { 'x-platform': 'WEB' }
+    });
     return response.data.data;
   },
-
   // Cập nhật thông tin profile
   updateProfile: async (data: UpdateProfileRequest): Promise<UserResponse> => {
-    const response = await axiosInstance.patch(USER_ENDPOINTS.PROFILE, data);
+    const response = await axiosInstance.patch(USER_ENDPOINTS.PROFILE, data, {
+      headers: { 'x-platform': 'WEB' }
+    });
     return response.data;
   },
 
@@ -30,6 +33,7 @@ export const userService = {
       {
         headers: {
           "Content-Type": "multipart/form-data",
+          'x-platform': 'WEB'
         },
       }
     );
@@ -43,31 +47,44 @@ export const userService = {
   }): Promise<UserResponse> => {
     const response = await axiosInstance.put(
       USER_ENDPOINTS.UPDATE_PASSWORD,
-      data
+      data,
+      {
+        headers: { 'x-platform': 'WEB' }
+      }
     );
     return response.data.data;
   },
 
   getAllUsers: async (query: string): Promise<UserListResponse> => {
     const response = await axiosInstance.get(
-      ADMIN_ENDPOINTS.GET_ALL_USERS(query)
+      ADMIN_ENDPOINTS.GET_ALL_USERS(query),
+      {
+        headers: { 'x-platform': 'WEB' }
+      }
     );
     return response.data;
   },
 
   banUser: async (id: string) => {
-    const response = await axiosInstance.post(ADMIN_ENDPOINTS.BAN_USER(id))
+    const response = await axiosInstance.post(ADMIN_ENDPOINTS.BAN_USER(id), {}, {
+      headers: { 'x-platform': 'WEB' }
+    });
     return response.data.data;
   },
 
   unbanUser: async (id: string) => {
-    const response = await axiosInstance.post(ADMIN_ENDPOINTS.UNBAN_USER(id));
+    const response = await axiosInstance.post(ADMIN_ENDPOINTS.UNBAN_USER(id), {}, {
+      headers: { 'x-platform': 'WEB' }
+    });
     return response.data.data;
   },
 
   getUserDevices: async (id: string): Promise<DeviceListResponse> => {
     const response = await axiosInstance.get(
-      ADMIN_ENDPOINTS.GET_USER_DEVICES(id)
+      ADMIN_ENDPOINTS.GET_USER_DEVICES(id),
+      {
+        headers: { 'x-platform': 'WEB' }
+      }
     );
     return response.data;
   },
@@ -77,6 +94,7 @@ export const userService = {
       ADMIN_ENDPOINTS.LOGOUT_USER_DEVICES(id),
       {
         data: { credentials: credentials },
+        headers: { 'x-platform': 'WEB' }
       }
     );
     return response.data;

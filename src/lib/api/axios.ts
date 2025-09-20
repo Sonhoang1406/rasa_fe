@@ -17,11 +17,11 @@ const processQueue = (error: unknown) => {
 };
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL + "/api",
+  baseURL: import.meta.env.VITE_BASE_URL + "/api" || 'http://localhost:8888',
   withCredentials: true, // Dùng cookie để gửi/nhận token
   headers: {
     "Content-Type": "application/json",
-    'x-platform': 'web'
+    'x-platform': 'WEB'
   },
 });
 

@@ -6,8 +6,8 @@ export const authApi = {
   login: async (data: LoginRequest): Promise<AuthResponse> => {
     const response = await api.post('/auth/login', data, {
       headers: {
-        'x-platform': 'WEB',
         'Content-Type': 'application/json',
+        'x-platform': 'WEB'
       },
     });
     return response.data;
