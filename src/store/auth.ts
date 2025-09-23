@@ -1,21 +1,17 @@
+import { IUser } from '@/interfaces/user.interface';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
-
 interface AuthState {
+  //Xem có đăng nhập hay không
   isAuthenticated: boolean;
-  user: User | null;
-  isLoading: boolean;
-  setAuth: (isAuthenticated: boolean, user: User | null) => void;
-  setLoading: (isLoading: boolean) => void;
+  //User data
+  user: IUser | null;
+  clientId: string | null;
+  //Actions
+  setAuth: (isAuthenticated: boolean, clientId: string | null) => void;
   logout: () => void;
-  updateUser: (user: Partial<User>) => void;
+  updateUser: (user: Partial<IUser>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -23,20 +19,15 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       isAuthenticated: false,
       user: null,
-      isLoading: false,
+      clientId: null,
       
-      setAuth: (isAuthenticated, user) => {
-        set({ isAuthenticated, user });
-      },
-      
-      setLoading: (isLoading) => {
-        set({ isLoading });
+      setAuth: (isAuthenticated: boolean, clientId: string | null) => {
+        set({ isAuthenticated, clientId});
       },
       
       logout: () => {
+        set({ isAuthenticated: false, user: null, clientId: null });
         localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        set({ isAuthenticated: false, user: null });
       },
       
       updateUser: (userData) => {
