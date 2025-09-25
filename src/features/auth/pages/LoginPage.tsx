@@ -39,6 +39,9 @@ export const LoginPage = () => {
             <Button variant="outline" className="w-full justify-center">
               Tiếp tục với Microsoft
             </Button>
+            <Button variant="outline" className="w-full justify-center">
+              Tiếp tục với điện thoại
+            </Button>
           </div>
 
           <div className="flex items-center gap-2">

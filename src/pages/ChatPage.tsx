@@ -40,41 +40,44 @@ export const ChatPage = () => {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* khung tin nhắn */}
-      <div className="flex-1 p-4 bg-gray-50 overflow-y-auto">
-        <div className="space-y-4">
-          {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex ${
-                msg.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
+    <div className="flex items-center justify-center h-screen bg-gray-100">
+      {/* khung chat cố định giữa màn hình */}
+      <div className="flex flex-col w-full max-w-[798px] h-[600px] bg-white shadow-lg rounded-xl">
+        {/* khung tin nhắn */}
+        <div className="flex-1 p-4 overflow-y-auto shadow-inner">
+          <div className="space-y-4">
+            {messages.map((msg, idx) => (
               <div
-                className={`rounded-lg px-4 py-2 max-w-[70%] text-sm ${
-                  msg.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-200 text-gray-900"
+                key={idx}
+                className={`flex ${
+                  msg.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
-                {msg.content}
+                <div
+                  className={`rounded-lg px-4 py-2 max-w-[70%] text-sm ${
+                    msg.role === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-200 text-gray-900"
+                  }`}
+                >
+                  {msg.content}
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* ô nhập */}
-      <div className="p-4 border-t flex gap-2">
-        <Input
-          placeholder="Nhập tin nhắn..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-        />
-        <Button onClick={sendMessage}>Gửi</Button>
+        {/* ô nhập */}
+        <div className="p-4 border-t flex gap-2 shadow-md">
+          <Input
+            placeholder="Nhập tin nhắn..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          />
+          <Button onClick={sendMessage}>Gửi</Button>
+        </div>
       </div>
     </div>
   );
