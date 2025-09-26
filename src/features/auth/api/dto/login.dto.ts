@@ -6,6 +6,6 @@ export interface LoginRequest {
 export interface LoginResponse {
   accessToken: string;
   clientId?: string;
-  isPreAcesss: boolean,
+  isPreAccess: boolean,
   preAccessType?: string;
 }
