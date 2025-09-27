@@ -31,13 +31,10 @@ import {
 } from "@/components/ui/popover";
 import { useRegister } from "../hooks/useRegister";
 import { useNavigate } from "react-router-dom";
-import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
 import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleAuth } from "../hooks/useGoogleAuth";
 
-
-const API_URL = import.meta.env.VITE_BASE_URL;
 
 export function RegisterForm({
   className,
@@ -48,6 +45,7 @@ export function RegisterForm({
   const { register, isLoading, error: apiError } = useRegister();
   const [validationError, setValidationError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { loginWithGoogle, isLoading: googleLoading, error: googleError } = useGoogleAuth();
 
   const validateForm = (formData: {
     email: string;
@@ -324,20 +322,28 @@ export function RegisterForm({
             </div>   
 
             <div className="space-y-4">
-              <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2"
-                    onClick={() => {
-                      window.location.href = `${API_URL}.EN`
+            <GoogleLogin
+              onSuccess={async (credentialResponse) => {
+                  if (credentialResponse.credential) {
+                    try {
+                      await loginWithGoogle(credentialResponse.credential);
+                    } catch (err) {
+                      console.error("Google login failed", err);
                     }
-                    }
-                  >
-                    <FcGoogle size={20} /> Google
-                  </Button>
-              </div>
-
+                  }
+                }
+              }
+              onError={() => {
+                  {googleError && (
+                    <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+                      {googleError}
+                    </div>
+                  )}
+                }
+              }
+              useOneTap
+              />
+              {googleLoading && <p className="text-sm text-gray-500">Signing in with Google...</p>}
               <div className="flex gap-4">
                   <Button
                     type="button"
