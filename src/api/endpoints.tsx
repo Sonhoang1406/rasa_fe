@@ -4,5 +4,8 @@ export default {
     LOGIN: "/api/v1/auth/login",
     LOGOUT: "/api/v1/auth/logout",
     REGISTER: "api/v1/auth/register",
+
+    // Social Login
+    GOOGLE: "/api/v1/auth/login/google",
   }
 } as const
