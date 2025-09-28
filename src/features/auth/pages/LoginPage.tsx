@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { authService } from "../api/service";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Card,
   CardContent,
@@ -18,33 +18,35 @@ export function LoginPage({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { login } = authService;
 
   const navigate = useNavigate();
 
-  // const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-  //   e.preventDefault();
-  //   setIsSubmitting(true);
-  //   setError(null);
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
-  //   try {
-  //     await login({ usernameOrEmail, password });
-  //   } catch (err: any) {
-  //     setError(
-  //       err.response?.data?.message ||
-  //         "Login failed. Please check your credentials."
-  //     );
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+    try {
+      await login({ email, password });
+      navigate("/home_chat");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message ||
+          "Login failed. Please check your credentials."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-  // const handleStayChat = () => {
-  //   navigate("/");
-  // };
+  const handleStayChat = () => {
+    navigate("/");
+  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -72,16 +74,16 @@ export function LoginPage({
             </div>
           )}
 
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label>Email or Username</Label>
+                <Label>Email </Label>
                 <Input
-                  id="usernameOrEmail"
+                  id="email"
                   type="text"
                   placeholder="m@example.com or johndoe"
-                  value={usernameOrEmail}
-                  onChange={(e) => setUsernameOrEmail(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isSubmitting}
                 />

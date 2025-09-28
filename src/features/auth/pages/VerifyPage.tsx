@@ -2,12 +2,13 @@ import { ThemeProvider } from "@/components";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useVerify } from "@/hooks/useVerify";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function VerifyPage() {
-  //   const { verify } = useVerify()
-  //   const location = useLocation();
-  //   const email = location.state?.email || "";
+  const { verify, isLoading, error } = useVerify();
+  const naviate = useNavigate();
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<
@@ -17,33 +18,43 @@ export function VerifyPage() {
   const [popupMessage, setPopupMessage] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
-  //   const handleVerify = async (e: React.FormEvent) => {
-  //     e.preventDefault()
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  //     if (!otp.trim()) {
-  //       setVerificationStatus("error")
-  //       setErrorMessage("Verification code cannot be empty")
-  //       setPopupMessage("Verification code cannot be empty")
-  //       setIsPopupOpen(true)
-  //       return
-  //     }
+    if (!otp.trim()) {
+      setVerificationStatus("error");
+      setErrorMessage("Verification code cannot be empty");
+      setPopupMessage("Verification code cannot be empty");
+      setIsPopupOpen(true);
+      return;
+    }
 
-  //     setIsVerifying(true)
-  //     try {
-  //       await verify({ email, otp })
-  //       setVerificationStatus("success")
-  //       setPopupMessage("Verification successful! Redirecting...")
-  //       setIsPopupOpen(true)
-  //       // Add redirect logic here if needed
-  //     } catch (error) {
-  //       console.log(error)
-  //       setVerificationStatus("error")
-  //       setPopupMessage(error instanceof Error ? error.message : "An unknown error occurred")
-  //       setIsPopupOpen(true)
-  //     } finally {
-  //       setIsVerifying(false)
-  //     }
-  //   }
+    setIsVerifying(true);
+    try {
+      const result = await verify(otp);
+      console.log("verify result", result);
+      if (!result || result.success === false) {
+        // handle lỗi theo body trả về
+        const msg = result?.message || "Verification failed";
+        throw new Error(msg);
+      }
+      setVerificationStatus("success");
+      setPopupMessage("Verification successful! Redirecting...");
+      setIsPopupOpen(true);
+      await sleep(1200);
+      naviate("/auth");
+      // Add redirect logic here if needed
+    } catch (error) {
+      console.log(error);
+      setVerificationStatus("error");
+      setPopupMessage(
+        error instanceof Error ? error.message : "An unknown error occurred"
+      );
+      setIsPopupOpen(true);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -64,7 +75,7 @@ export function VerifyPage() {
               </p>
             </div>
 
-            <form className="space-y-4">
+            <form onSubmit={handleVerify} className="space-y-4">
               <div className="space-y-2">
                 <label
                   htmlFor="verification-code"
@@ -85,7 +96,8 @@ export function VerifyPage() {
               <Button
                 type="submit"
                 className="w-full bg-[#FC6D26] hover:bg-[#E24329] text-white"
-                disabled={isVerifying || verificationStatus === "success"}
+                // disabled={isVerifying || verificationStatus === "success"}
+                disabled={isLoading}
               >
                 {isVerifying ? "Verifying..." : "Verify"}
               </Button>
@@ -148,3 +160,4 @@ export function VerifyPage() {
     </ThemeProvider>
   );
 }
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

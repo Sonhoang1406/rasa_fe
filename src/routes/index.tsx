@@ -1,7 +1,8 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HomeDirectorPage, NotFoundPage } from "@/pages";
-import { AuthLayout } from "@/layouts";
+import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
+import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,12 @@ const router = createBrowserRouter([
         element: <VerifyPage />,
       },
     ],
+  },
+  {
+    path: "/",
+    element: <MainLayout />,
+    errorElement: <NotFoundPage />,
+    children: [{ path: "home_chat", element: <HomeChat /> }],
   },
   { path: "*", element: <NotFoundPage /> },
 ]);

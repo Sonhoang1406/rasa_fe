@@ -3,5 +3,7 @@ export default {
     REFRESH_TOKEN: "/api/v1/auth/washing",
     LOGIN: "/api/v1/auth/login",
     LOGOUT: "/api/v1/auth/logout",
-  }
-} as const
+    REGISTER: "/api/v1/auth/register",
+    VERIFY: "/api/v1/auth/verify-email",
+  },
+} as const;
