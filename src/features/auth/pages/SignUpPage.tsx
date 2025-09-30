@@ -26,7 +26,6 @@ import { useRegister } from "@/hooks/useRegister";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { log } from "console";
 
 export function SignUpPage({
   className,

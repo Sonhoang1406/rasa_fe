@@ -7,7 +7,12 @@ import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomeDirectorPage />,
+    element: <MainLayout />,
+    errorElement: <NotFoundPage />,
+    children: [
+      { index: true, element: <HomeDirectorPage /> },
+      { path: "home_chat", element: <HomeChat /> },
+    ],
   },
   {
     path: "/auth",
@@ -27,12 +32,12 @@ const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: "/",
-    element: <MainLayout />,
-    errorElement: <NotFoundPage />,
-    children: [{ path: "home_chat", element: <HomeChat /> }],
-  },
+  // {
+  //   path: "/",
+  //   element: <MainLayout />,
+  //   errorElement: <NotFoundPage />,
+  //   children: [{ path: "home_chat", index: true, element: <HomeChat /> }],
+  // },
   { path: "*", element: <NotFoundPage /> },
 ]);
 

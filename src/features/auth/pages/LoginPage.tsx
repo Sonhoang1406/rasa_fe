@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { authService } from "../api/service";
-import { FormEvent, useState } from "react";
+import { FormEvent, use, useState } from "react";
 import {
   Card,
   CardContent,
@@ -13,6 +13,10 @@ import { Label } from "@radix-ui/react-dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth";
+import toast from "react-hot-toast";
+import { useMe } from "@/hooks/useMe";
+import { useLogin } from "@/hooks/useLogin";
 
 export function LoginPage({
   className,
@@ -22,7 +26,9 @@ export function LoginPage({
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = authService;
+  const { login } = useLogin();
+  // const {login} = authService
+  const { getMe } = useMe();
 
   const navigate = useNavigate();
 
@@ -33,6 +39,12 @@ export function LoginPage({
 
     try {
       await login({ email, password });
+      toast.success("Login successful");
+      const me = await getMe();
+      useAuthStore.setState({
+        isAuthenticated: true,
+        user: me,
+      });
       navigate("/home_chat");
     } catch (err: any) {
       setError(
