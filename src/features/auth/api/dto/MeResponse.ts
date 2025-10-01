@@ -1,5 +1,5 @@
+import {IRole} from "@/interfaces/role.interface";
 export interface MeResponse {
-  success: boolean;
   data: {
     _id: string;
     email: string;
@@ -10,10 +10,9 @@ export interface MeResponse {
     address: string;
     phoneNumber: string;
     avatar: string;
-    roles: string[];
+    roles: IRole[];
     is2FAEnabled: boolean;
     createdAt: string;
     updatedAt: string;
   },
-  message: string;
 }

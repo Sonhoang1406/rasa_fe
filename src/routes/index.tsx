@@ -1,5 +1,5 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { HomeDirectorPage, NotFoundPage } from "@/pages";
+import { HomeDirectorPage, NotFoundPage, UserProfilePage } from "@/pages";
 import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
@@ -12,6 +12,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomeDirectorPage /> },
       { path: "home_chat", element: <HomeChat /> },
+      { path: "profile", element: <UserProfilePage /> },
     ],
   },
   {

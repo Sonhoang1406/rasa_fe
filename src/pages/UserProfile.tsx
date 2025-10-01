@@ -13,14 +13,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar, CalendarIcon, Eye, EyeOff } from "lucide-react";
+import { CalendarIcon, Eye, EyeOff } from "lucide-react";
 import {
   Select,
   SelectContent,
   SelectItem,
+  SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SelectTrigger } from "@radix-ui/react-select";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useMe } from "@/hooks/useMe";
 import { useAuthStore } from "@/store/auth";
+import { Calendar } from "@/components/ui/calendar";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "Tên không được để trống"),
@@ -43,7 +44,7 @@ const profileSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
-export const UserProfileForm = () => {
+export const UserProfilePage = () => {
   //   const {
   //     getProfile,
   //     updateProfile,
@@ -93,11 +94,11 @@ export const UserProfileForm = () => {
         if (!userProfile) return;
         setUser(userProfile);
         reset({
-          firstName: userProfile.data.firstName,
-          phoneNumber: userProfile.data.phoneNumber,
-          gender: userProfile.data.gender,
-          dateOfBirth: userProfile.data.dateOfBirth.substring(0, 10),
-          address: userProfile.data.address,
+          firstName: userProfile.firstName,
+          phoneNumber: userProfile.phoneNumber,
+          gender: userProfile.gender,
+          dateOfBirth: userProfile.dateOfBirth.substring(0, 10),
+          address: userProfile.address,
         });
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -122,7 +123,7 @@ export const UserProfileForm = () => {
 
   if (!user) return <div>Loading...</div>;
 
-  const genderValue = watch("gender", user.data.gender);
+  const genderValue = watch("gender", user.gender);
 
   return (
     <div className="p-4 md:p-6 max-w-4xl w-full mx-auto min-h-screen flex flex-col gap-6">
@@ -138,8 +139,8 @@ export const UserProfileForm = () => {
           {/* Avatar có nút sửa */}
           <div className="relative w-16 h-16">
             <Avatar className="w-16 h-16">
-              <AvatarImage src={user.data.avatar} className="object-cover" />
-              <AvatarFallback>{user.data.firstName?.[0] || "?"}</AvatarFallback>
+              <AvatarImage src={user.avatar} className="object-cover" />
+              <AvatarFallback>{user.firstName?.[0] || "?"}</AvatarFallback>
             </Avatar>
 
             <button
@@ -168,10 +169,10 @@ export const UserProfileForm = () => {
           {/* Thông tin người dùng */}
           <div>
             <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white">
-              {user.data.firstName}
+              {user.firstName}
             </h3>
             <p className="text-sm md:text-base text-muted-foreground dark:text-gray-300">
-              {user.data.email}
+              {user.email}
             </p>
           </div>
 
@@ -196,15 +197,15 @@ export const UserProfileForm = () => {
           <label className="text-sm md:text-base font-medium">Full Name</label>
           {isEditing ? (
             <Input
-              {...register("name")}
+              {...register("firstName")} // name="firstName"
               placeholder="Your First Name"
               className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
             />
           ) : (
-            <p className="mt-1">{user.name}</p>
+            <p className="mt-1">{user.firstName + " " + user.lastName}</p>
           )}
-          {errors.name && (
-            <p className="text-red-500 text-sm">{errors.name.message}</p>
+          {errors.firstName && (
+            <p className="text-red-500 text-sm">{errors.firstName.message}</p>
           )}
         </div>
 
@@ -219,11 +220,11 @@ export const UserProfileForm = () => {
                   type="button"
                   className={cn(
                     "w-full text-left mt-1 text-sm md:text-base font-normal px-2 py-1.5 border rounded-md bg-white dark:bg-gray-700 dark:text-white dark:border-gray-600",
-                    !watch("dob") && "text-muted-foreground"
+                    !watch("dateOfBirth") && "text-muted-foreground"
                   )}
                 >
-                  {watch("dob")
-                    ? format(new Date(watch("dob")), "dd/MM/yyyy")
+                  {watch("dateOfBirth")
+                    ? format(new Date(watch("dateOfBirth")), "dd/MM/yyyy")
                     : "Chọn ngày sinh"}
                   <CalendarIcon className="ml-auto float-right h-5 w-5 opacity-50" />
                 </button>
@@ -231,7 +232,11 @@ export const UserProfileForm = () => {
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
-                  selected={watch("dob") ? new Date(watch("dob")) : undefined}
+                  selected={
+                    watch("dateOfBirth")
+                      ? new Date(watch("dateOfBirth"))
+                      : undefined
+                  }
                   onSelect={(date) => {
                     if (date) {
                       // Chuyển đổi sang định dạng ngày mà không bị ảnh hưởng múi giờ
@@ -239,7 +244,10 @@ export const UserProfileForm = () => {
                       localDate.setMinutes(
                         localDate.getMinutes() - localDate.getTimezoneOffset()
                       ); // Điều chỉnh theo múi giờ
-                      setValue("dob", localDate.toISOString().substring(0, 10)); // Lưu ngày theo định dạng yyyy-mm-dd
+                      setValue(
+                        "dateOfBirth",
+                        localDate.toISOString().substring(0, 10)
+                      ); // Lưu ngày theo định dạng yyyy-mm-dd
                     }
                   }}
                   captionLayout="dropdown"
@@ -251,7 +259,7 @@ export const UserProfileForm = () => {
             </Popover>
           ) : (
             <p className="mt-1">
-              {new Date(user.dob).toLocaleDateString("vi-VN")}
+              {new Date(user.dateOfBirth).toLocaleDateString("vi-VN")}
             </p>
           )}
         </div>
@@ -265,7 +273,7 @@ export const UserProfileForm = () => {
               }
               value={genderValue}
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white">
                 <SelectValue placeholder="Select Gender" />
               </SelectTrigger>
               <SelectContent>
@@ -295,21 +303,18 @@ export const UserProfileForm = () => {
           <label className="text-sm md:text-base font-medium">Phone</label>
           {isEditing ? (
             <Input
-              {...register("phone")}
+              {...register("phoneNumber")}
               placeholder="Your Phone"
               className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
             />
           ) : (
-            <p className="mt-1">{user.phone}</p>
+            <p className="mt-1">{user.phoneNumber}</p>
           )}
         </div>
 
-        <div className="col-span-2">
-          <label className="text-sm md:text-base font-medium">
-            My email Address
-          </label>
+        <div className="text-sm md:text-base ">
+          <label className="text-sm md:text-base font-medium">Email</label>
           <div className="flex items-center gap-2">
-            <span className="text-blue-500">📧</span>
             <p className="mt-1">{user.email}</p>
           </div>
         </div>
@@ -411,34 +416,34 @@ export const UserProfileForm = () => {
               Hủy
             </Button>
             <Button
-              onClick={async () => {
-                setPasswordError("");
-                if (!oldPassword || !newPassword || !confirmPassword) {
-                  setPasswordError("Vui lòng nhập đầy đủ thông tin");
-                  return;
-                }
-                if (newPassword !== confirmPassword) {
-                  setPasswordError("Mật khẩu mới và nhập lại không khớp");
-                  return;
-                }
+            // onClick={async () => {
+            //   setPasswordError("");
+            //   if (!oldPassword || !newPassword || !confirmPassword) {
+            //     setPasswordError("Vui lòng nhập đầy đủ thông tin");
+            //     return;
+            //   }
+            //   if (newPassword !== confirmPassword) {
+            //     setPasswordError("Mật khẩu mới và nhập lại không khớp");
+            //     return;
+            //   }
 
-                try {
-                  await updatePassword({
-                    oldPassword,
-                    newPassword,
-                    newPasswordConfirm: confirmPassword,
-                  });
-                  toast.success("Đổi mật khẩu thành công!");
-                  setOpenPasswordDialog(false);
-                  setOldPassword("");
-                  setNewPassword("");
-                  setConfirmPassword("");
-                } catch (err) {
-                  setPasswordError(
-                    "Đổi mật khẩu không thành công, thử lại sau"
-                  );
-                }
-              }}
+            //   try {
+            //     await updatePassword({
+            //       oldPassword,
+            //       newPassword,
+            //       newPasswordConfirm: confirmPassword,
+            //     });
+            //     toast.success("Đổi mật khẩu thành công!");
+            //     setOpenPasswordDialog(false);
+            //     setOldPassword("");
+            //     setNewPassword("");
+            //     setConfirmPassword("");
+            //   } catch (err) {
+            //     setPasswordError(
+            //       "Đổi mật khẩu không thành công, thử lại sau"
+            //     );
+            //   }
+            // }}
             >
               Lưu
             </Button>
@@ -478,19 +483,19 @@ export const UserProfileForm = () => {
               Hủy
             </Button>
             <Button
-              onClick={async () => {
-                if (!selectedFile) return;
-                try {
-                  const userUpdated = await updateAvatar(selectedFile);
-                  toast.success("Cập nhật avatar thành công!");
-                  if (!userUpdated) return;
-                  setUser(userUpdated);
-                  setSelectedFile(null);
-                  setOpenAvatarDialog(false);
-                } catch (err) {
-                  console.error("Lỗi khi cập nhật avatar:", err);
-                }
-              }}
+            // onClick={async () => {
+            //   if (!selectedFile) return;
+            //   try {
+            //     const userUpdated = await updateAvatar(selectedFile);
+            //     toast.success("Cập nhật avatar thành công!");
+            //     if (!userUpdated) return;
+            //     setUser(userUpdated);
+            //     setSelectedFile(null);
+            //     setOpenAvatarDialog(false);
+            //   } catch (err) {
+            //     console.error("Lỗi khi cập nhật avatar:", err);
+            //   }
+            // }}
             >
               Lưu ảnh
             </Button>

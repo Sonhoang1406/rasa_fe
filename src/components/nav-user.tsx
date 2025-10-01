@@ -16,13 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useMe } from "@/hooks/useMe";
 import { useAuthStore } from "@/store/auth";
-import { set } from "date-fns";
+import { useMe } from "@/hooks/useMe";
 
 export function NavUser() {
   const { isMobile } = useSidebar();
-  //   const { user, logout } = useAuth();
+  // const { user } = useAuthStore();
   const { user } = useMe();
   const navigate = useNavigate();
   const { logout } = useAuthStore();
@@ -57,16 +56,14 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.data.avatar} alt={user.data.firstName} />
+                <AvatarImage src={user.avatar} alt={user.firstName} />
                 <AvatarFallback className="rounded-lg">
-                  {user.data.firstName ? user.data.firstName[0] : "U"}
+                  {user.firstName ? user.firstName[0] : "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">
-                  {user.data.firstName}
-                </span>
-                <span className="truncate text-xs">{user.data.email}</span>
+                <span className="truncate font-semibold">{user.firstName}</span>
+                <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -80,19 +77,16 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    src={user.data.avatar}
-                    alt={user.data.firstName}
-                  />
+                  <AvatarImage src={user.avatar} alt={user.firstName} />
                   <AvatarFallback className="rounded-lg">
-                    {user.data.firstName ? user.data.firstName[0] : "U"}
+                    {user.firstName ? user.firstName[0] : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">
-                    {user.data.firstName}
+                    {user.firstName}
                   </span>
-                  <span className="truncate text-xs">{user.data.email}</span>
+                  <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
@@ -119,7 +113,7 @@ export function NavUser() {
             {/*</DropdownMenuItem>*/}
             {/* </DropdownMenuGroup> */}
             {/* <DropdownMenuSeparator /> */}
-            <DropdownMenuItem onClick={() => navigate("/user-profile")}>
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
               <BadgeCheck />
               Account
             </DropdownMenuItem>

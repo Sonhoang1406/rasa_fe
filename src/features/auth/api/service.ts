@@ -24,10 +24,10 @@ export const authService = {
   },
     getMe: async (): Promise<IUser> => {
     const response = await axiosInstance.get(ENDPOINTS.AUTH_ENDPOINTS.ME);
-    return response.data;
+    return response.data.data;
   },
     updateMe: async (data: UpdateMeRequest): Promise<IUser> => {
     const response = await axiosInstance.put(ENDPOINTS.AUTH_ENDPOINTS.UPDATE_ME, data);
-    return response.data;
+    return response.data.data;
   }
 }

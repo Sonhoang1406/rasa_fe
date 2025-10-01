@@ -11,6 +11,8 @@ export const useMe = () => {
     // const [user, setUser] = useState<IUser | null>(null);
     const {updateUser} = useAuthStore();
     const user = useAuthStore((state) => state.user);
+
+    // Lấy thông tin user hiện tại
     const getMe = async () => {
         setIsLoading(true);
         setError(null);
