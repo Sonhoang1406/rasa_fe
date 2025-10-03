@@ -11,4 +11,15 @@ export default {
   USER_ENDPOINTS: {
     PROFILE: "/api/v1/user/profile",
   },
+  ROLE_ENDPOINTS: {
+    GET_ALL: "/api/v1/role/all",
+    GET_ALL_PAGINATED: "/api/v1/role",
+    UPDATE_ROLE: "/api/v1/role",
+    CREATE_ROLE: "/api/v1/role",
+    DELETE_ROLE: (id: string) => `/api/v1/role/${id}/hard`,
+  },
+  PERMISSION_ENDPOINTS: {
+    GET_ALL: "/api/v1/permission/all",
+    GET_ALL_PAGINATED: "/api/v1/permission",
+  },
 } as const;

@@ -3,6 +3,7 @@ import { HomeDirectorPage, NotFoundPage, UserProfilePage } from "@/pages";
 import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
+import { RoleManagement } from "@/features/roles";
 
 const router = createBrowserRouter([
   {
@@ -13,6 +14,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomeDirectorPage /> },
       { path: "home_chat", element: <HomeChat /> },
       { path: "profile", element: <UserProfilePage /> },
+      { path: "roles", element: <RoleManagement /> },
     ],
   },
   {
