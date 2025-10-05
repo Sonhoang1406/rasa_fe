@@ -21,5 +21,8 @@ export default {
   PERMISSION_ENDPOINTS: {
     GET_ALL: "/api/v1/permission/all",
     GET_ALL_PAGINATED: "/api/v1/permission",
+    UPDATE_PERMISSION: "/api/v1/permission",
+    CREATE_PERMISSION: "/api/v1/permission",
+    DELETE_PERMISSION: (id: string) => `/api/v1/permission/${id}/hard`,
   },
 } as const;

@@ -1,3 +1,4 @@
+import { PermissionCreateRequest } from "@/features/permissions/api/dto/PermissionCreateRequest";
 import { ListPermissionResponse } from "@/features/permissions/api/dto/permissions.dto";
 import { permissionsService } from "@/features/permissions/api/service";
 import { useState } from "react";
@@ -22,5 +23,35 @@ export const usePermission = () => {
         }
     };
 
-    return { permissions, isLoading, error, fetchPermissions };
+    const deletePermission = async (id: string): Promise<void> => {
+        try {
+            await permissionsService.deletePermission(id);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to delete permission";
+            setError(message);
+            throw new Error(message);
+        }
+    };
+
+    const createPermission = async (data: PermissionCreateRequest): Promise<void> => {
+        try {
+            await permissionsService.createPermission(data);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to create permission";
+            setError(message);
+            throw new Error(message);
+        }
+    };
+
+    const updatePermission = async (id: string, data: Partial<PermissionCreateRequest>): Promise<void> => {
+        try {
+            await permissionsService.updatePermission(id, data);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to update permission";
+            setError(message);
+            throw new Error(message);
+        }
+    };
+
+    return { permissions, isLoading, error, fetchPermissions, deletePermission, createPermission, updatePermission };
 }
