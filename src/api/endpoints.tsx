@@ -22,4 +22,22 @@ export default {
     GET_ALL: "/api/v1/permission/all",
     GET_ALL_PAGINATED: "/api/v1/permission",
   },
+  ENTITY_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/entity",
+    GET_BY_ID: (id: string) => `/api/v1/entity/${id}`,
+    CREATE: "/api/v1/entity",
+    UPDATE: (id: string) => `/api/v1/entity/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/entity/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/entity/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/entity/${id}/restore`,
+  },
+  INTENT_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/intent",
+    GET_BY_ID: (id: string) => `/api/v1/intent/${id}`,
+    CREATE: "/api/v1/intent",
+    UPDATE: (id: string) => `/api/v1/intent/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/intent/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/intent/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/intent/${id}/restore`,
+  },
 } as const;

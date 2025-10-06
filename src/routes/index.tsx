@@ -4,6 +4,8 @@ import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 import { RoleManagement } from "@/features/roles";
+import { EntityManagement } from "@/features/entity";
+import { CreateIntentPage, EditIntentPage, IntentManagementPage } from "@/features/intents";
 
 const router = createBrowserRouter([
   {
@@ -15,6 +17,14 @@ const router = createBrowserRouter([
       { path: "home_chat", element: <HomeChat /> },
       { path: "profile", element: <UserProfilePage /> },
       { path: "roles", element: <RoleManagement /> },
+      { path: "entities", element: <EntityManagement /> },
+      { path: "intents", 
+        children: [
+          { index: true, element: <IntentManagementPage /> },
+          { path: "new", element: <CreateIntentPage /> },
+          { path: "edit", element: <EditIntentPage /> },
+        ],
+      }
     ],
   },
   {
