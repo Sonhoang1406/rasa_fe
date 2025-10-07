@@ -6,6 +6,7 @@ import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 import { RoleManagement } from "@/features/roles";
 import { EntityManagement } from "@/features/entity";
 import { CreateIntentPage, EditIntentPage, IntentManagementPage } from "@/features/intents";
+import { ResponseManagement } from "@/features/reponses";
 
 const router = createBrowserRouter([
   {
@@ -24,7 +25,8 @@ const router = createBrowserRouter([
           { path: "new", element: <CreateIntentPage /> },
           { path: "edit", element: <EditIntentPage /> },
         ],
-      }
+      },
+      { path: "responses", element: <ResponseManagement /> },
     ],
   },
   {

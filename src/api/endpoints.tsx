@@ -40,4 +40,14 @@ export default {
     SOFT_DELETE: (id: string) => `/api/v1/intent/${id}/soft`,
     RESTORE: (id: string) => `/api/v1/intent/${id}/restore`,
   },
+  RESPONSE_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/my-response",
+    GET_BY_ID: (id: string) => `/api/v1/my-response/${id}`,
+    CREATE: "/api/v1/my-response",
+    UPDATE: (id: string) => `/api/v1/my-response/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/my-response/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/my-response/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/my-response/${id}/restore`,
+  },
+
 } as const;

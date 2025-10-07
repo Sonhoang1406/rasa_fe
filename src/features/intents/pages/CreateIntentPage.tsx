@@ -19,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ArrowLeft, FileCode, Search, X, AlertCircle, Eye, Plus, Code2, FormInput } from "lucide-react";
+import { ArrowLeft, FileCode, Search, X, AlertCircle, Eye, Plus, Code2, FormInput, HelpCircle } from "lucide-react";
 import { intentService } from "../api/service";
 import { IEntity } from "@/interfaces/entity.interface";
 import { toast } from "sonner";
@@ -50,6 +50,13 @@ export function CreateIntentPage() {
   
   // Normal mode examples
   const [examples, setExamples] = useState<string[]>(["", ""]);
+  
+  // Track focused input in Normal Mode
+  const [focusedExampleIndex, setFocusedExampleIndex] = useState<number | null>(null);
+  const exampleInputRefs = useRef<(HTMLInputElement | undefined)[]>([]);
+
+  // Help dialog state
+  const [showHelp, setShowHelp] = useState(false);
 
   // Helper function to convert to snake_case
   const toSnakeCase = (str: string): string => {
@@ -134,8 +141,8 @@ ${exampleLines || "    - example1"}`;
     setIsExpertMode(toExpertMode);
   };
 
-  // Insert entity pattern at cursor position
-  const insertEntityPattern = (entity: IEntity) => {
+  // Insert entity pattern at cursor position (Expert Mode)
+  const insertEntityPatternExpert = (entity: IEntity) => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
       const cursorPos = textarea.selectionStart;
@@ -156,6 +163,38 @@ ${exampleLines || "    - example1"}`;
     }
   };
 
+  // Insert entity pattern into focused input (Normal Mode)
+  const insertEntityPatternNormal = (entity: IEntity) => {
+    // Determine which input to insert into
+    let targetIndex = focusedExampleIndex;
+    
+    // If no input is focused, use the last non-empty input, or the last input
+    if (targetIndex === null) {
+      const lastNonEmptyIndex = examples.findLastIndex(ex => ex.trim());
+      targetIndex = lastNonEmptyIndex >= 0 ? lastNonEmptyIndex : examples.length - 1;
+    }
+
+    const input = exampleInputRefs.current[targetIndex];
+    if (!input) return;
+
+    const pattern = `[enter_value]([${entity._id}])`;
+    const cursorPos = input.selectionStart || 0;
+    const textBefore = examples[targetIndex].substring(0, cursorPos);
+    const textAfter = examples[targetIndex].substring(cursorPos);
+    
+    const newValue = textBefore + pattern + textAfter;
+    handleUpdateExample(targetIndex, newValue);
+
+    // Focus and set cursor position
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(
+        cursorPos + pattern.length,
+        cursorPos + pattern.length
+      );
+    }, 0);
+  };
+
   // Add entity
   const handleAddEntity = (entity: IEntity) => {
     // Check if already selected
@@ -165,7 +204,13 @@ ${exampleLines || "    - example1"}`;
     }
 
     setSelectedEntities([...selectedEntities, entity]);
-    insertEntityPattern(entity);
+    
+    // Insert pattern based on current mode
+    if (isExpertMode) {
+      insertEntityPatternExpert(entity);
+    } else {
+      insertEntityPatternNormal(entity);
+    }
 
     setEntitySearchOpen(false);
     setEntitySearchQuery("");
@@ -173,7 +218,11 @@ ${exampleLines || "    - example1"}`;
 
   // Click on selected entity to insert pattern again
   const handleEntityClick = (entity: IEntity) => {
-    insertEntityPattern(entity);
+    if (isExpertMode) {
+      insertEntityPatternExpert(entity);
+    } else {
+      insertEntityPatternNormal(entity);
+    }
   };
 
   // Remove entity
@@ -246,7 +295,7 @@ ${exampleLines || "    - example1"}`;
     const entityPattern = /\[([^\]]+)\]\(\[([^\]]+)\]\)/g;
     preview = preview.replace(entityPattern, (match, value, entityId) => {
       const entityName = entityMap.get(entityId);
-      return entityName ? `[${value}]({${entityName}})` : match;
+      return entityName ? `[${value}](${entityName})` : match;
     });
 
     return preview;
@@ -294,6 +343,158 @@ ${exampleLines || "    - example1"}`;
 
   return (
     <div className="container mx-auto py-6 max-w-5xl">
+      {/* Help Button - Fixed position */}
+      <Button
+        variant="outline"
+        size="icon"
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 hover:text-white z-50"
+        onClick={() => setShowHelp(true)}
+        title={t("Help & Guide")}
+      >
+        <HelpCircle className="h-6 w-6" />
+      </Button>
+
+      {/* Help Dialog/Modal */}
+      {showHelp && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowHelp(false)}
+        >
+          <div 
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b p-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-blue-600" />
+                {t("Intent Guide")}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowHelp(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              {/* What is Intent */}
+              <section>
+                <h3 className="text-lg font-semibold mb-3 text-blue-600">
+                  📌 {t("What is an Intent?")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                  {t("An Intent represents the user's intention or goal in a conversation. It's what the user wants to achieve when they send a message to the chatbot.")}
+                </p>
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                  <p className="text-sm font-medium mb-2">{t("Examples")}:</p>
+                  <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300">
+                    <li>• <code className="bg-white dark:bg-gray-900 px-1 rounded">greet</code> - {t("User wants to greet")}</li>
+                    <li>• <code className="bg-white dark:bg-gray-900 px-1 rounded">ask_weather</code> - {t("User wants to know the weather")}</li>
+                    <li>• <code className="bg-white dark:bg-gray-900 px-1 rounded">book_flight</code> - {t("User wants to book a flight")}</li>
+                  </ul>
+                </div>
+              </section>
+
+              {/* Relationship with Entity */}
+              <section>
+                <h3 className="text-lg font-semibold mb-3 text-green-600">
+                  🔗 {t("Relationship between Intent and Entity")}
+                </h3>
+                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 mb-3">
+                  {t("Intent identifies WHAT the user wants, while Entity identifies specific INFORMATION within that intention.")}
+                </p>
+                <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                  <p className="text-sm font-medium mb-2">{t("Example")}:</p>
+                  <div className="text-sm space-y-2 text-gray-700 dark:text-gray-300">
+                    <p className="font-mono bg-white dark:bg-gray-900 p-2 rounded">
+                      "{t("Book a flight to Hanoi tomorrow")}"
+                    </p>
+                    <ul className="space-y-1 ml-4">
+                      <li>• <strong>{t("Intent")}</strong>: <code className="bg-white dark:bg-gray-900 px-1 rounded">book_flight</code></li>
+                      <li>• <strong>{t("Entities")}</strong>: 
+                        <ul className="ml-4 mt-1">
+                          <li>- <code className="bg-white dark:bg-gray-900 px-1 rounded">city</code>: "Hanoi"</li>
+                          <li>- <code className="bg-white dark:bg-gray-900 px-1 rounded">time</code>: "tomorrow"</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              {/* Important Notes */}
+              <section>
+                <h3 className="text-lg font-semibold mb-3 text-orange-600">
+                  ⚠️ {t("Important Notes")}
+                </h3>
+                <div className="space-y-3">
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                    <p className="text-sm font-medium mb-2">1. {t("Intent Naming")}:</p>
+                    <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                      <li>• {t("Use snake_case (lowercase with underscores)")}</li>
+                      <li>• {t("Be descriptive and clear: ask_weather, not weather")}</li>
+                      <li>• {t("Avoid special characters and spaces")}</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                    <p className="text-sm font-medium mb-2">2. {t("Training Examples")}:</p>
+                    <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                      <li>• {t("Provide at least 10-15 diverse examples")}</li>
+                      <li>• {t("Include variations in wording and phrasing")}</li>
+                      <li>• {t("Cover different ways users might express the same intent")}</li>
+                      <li>• {t("Use entity patterns when values can vary")}</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                    <p className="text-sm font-medium mb-2">3. {t("Entity Integration")}:</p>
+                    <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                      <li>• {t("Format")}: <code className="bg-white dark:bg-gray-900 px-1 rounded">[value]([entity_id])</code></li>
+                      <li>• {t("Example")}: <code className="bg-white dark:bg-gray-900 px-1 rounded">[Hanoi]([city_entity_id])</code></li>
+                      <li>• {t("Click on selected entities to insert patterns easily")}</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-orange-50 dark:bg-orange-950/30 rounded-lg">
+                    <p className="text-sm font-medium mb-2">4. {t("Best Practices")}:</p>
+                    <ul className="text-sm space-y-1 text-gray-700 dark:text-gray-300 ml-4">
+                      <li>• {t("Keep intents focused on one goal")}</li>
+                      <li>• {t("Avoid overlapping intents")}</li>
+                      <li>• {t("Use Expert Mode for complex YAML structures")}</li>
+                      <li>• {t("Test your intent with real user phrases")}</li>
+                    </ul>
+                  </div>
+                </div>
+              </section>
+
+              {/* Quick Tips */}
+              <section className="border-t pt-4">
+                <h3 className="text-lg font-semibold mb-3">
+                  💡 {t("Quick Tips")}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded">
+                    <p className="text-sm font-medium mb-1">🎯 {t("Normal Mode")}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {t("Perfect for beginners. Add examples easily with forms.")}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded">
+                    <p className="text-sm font-medium mb-1">⚙️ {t("Expert Mode")}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {t("Full YAML control for advanced users.")}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <Button
@@ -418,7 +619,7 @@ ${exampleLines || "    - example1"}`;
           />
         </div>
 
-        {/* Selected Entities - NOW CLICKABLE */}
+        {/* Selected Entities - CLICKABLE */}
         {selectedEntities.length > 0 && (
           <div className="space-y-2">
             <Label>{t("Selected Entities")}</Label>
@@ -429,7 +630,7 @@ ${exampleLines || "    - example1"}`;
                   variant="secondary"
                   className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
                   onClick={() => handleEntityClick(entity)}
-                  title={t("Click to insert entity pattern at cursor")}
+                  title={t("Click to insert entity pattern")}
                 >
                   <span>{entity.name}</span>
                   <Button
@@ -447,7 +648,9 @@ ${exampleLines || "    - example1"}`;
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              💡 {t("Click on an entity to insert its pattern at cursor position")}
+              💡 {isExpertMode 
+                ? t("Click on an entity to insert its pattern at cursor position")
+                : t("Click on an entity to insert into the focused example (or last example)")}
             </p>
           </div>
         )}
@@ -473,8 +676,11 @@ ${exampleLines || "    - example1"}`;
               {examples.map((example, index) => (
                 <div key={index} className="flex gap-2">
                   <Input
+                    ref={(el) => (exampleInputRefs.current[index] = el)}
                     value={example}
                     onChange={(e) => handleUpdateExample(index, e.target.value)}
+                    onFocus={() => setFocusedExampleIndex(index)}
+                    onBlur={() => setFocusedExampleIndex(null)}
                     placeholder={t("Enter example phrase")}
                     className="flex-1"
                   />
@@ -493,7 +699,7 @@ ${exampleLines || "    - example1"}`;
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              {t("Add training examples for this intent")}
+              {t("Add training examples for this intent. Click inside an example field, then click an entity to insert it.")}
             </p>
           </div>
         ) : (

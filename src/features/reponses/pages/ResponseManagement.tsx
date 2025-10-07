@@ -40,15 +40,20 @@ import {
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { IIntent } from "@/interfaces/intent.interface";
-import { intentService } from "../api/service";
-import { ListIntentResponse } from "../api/dto/IntentResponse";
+import { IMyResponse } from "@/interfaces/response.interface";
+import { responseService } from "../api/service";
+import { ListMyResponseResult } from "../api/dto/MyResponseResult";
 import { ConfirmSoftDeleteDialog, ConfirmHardDeleteDialog } from "@/components/confirm-delete-dialog";
 import { ConfirmRestoreDialog } from "@/components/confirm-restore-dialog";
 import { Command } from "@/components/ui/command";
-import IntentDetailsDialog from "../components/IntentDetailsDialog";
+import { Badge } from "@/components/ui/badge";
+import ResponseDetailsDialog from "../components/ResponseDetailsDialog";
+// import CreateResponseDialog from "../components/CreateResponseDialog";
+// import EditResponseDialog from "../components/EditResponseDialog";
+import createMyReponseQuery from "../api/dto/MyReponseQuery";
+import CreateResponseDialog from "../components/CreateResponseDialog";
+import EditResponseDialog from "../components/EditResponseDialog";
 
 const filterSchema = z.object({
   search: z.string().optional(),
@@ -60,20 +65,21 @@ const filterSchema = z.object({
   endDate: z.string().optional(),
 });
 
-export function IntentManagementPage() {
+export function ResponseManagement() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [rowSelection, setRowSelection] = useState({});
-  const [intentsData, setIntentsData] = useState<IIntent[]>([]);
+  const [responsesData, setResponsesData] = useState<IMyResponse[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedIntentId, setSelectedIntentId] = useState<string | null>(null);
   const [confirmSoftDeleteOpen, setConfirmSoftDeleteOpen] = useState(false);
   const [confirmHardDeleteOpen, setConfirmHardDeleteOpen] = useState(false);
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
-  const [intentToDelete, setIntentToDelete] = useState<IIntent | null>(null);
-  const [intentToRestore, setIntentToRestore] = useState<IIntent | null>(null);
+  const [responseToDelete, setResponseToDelete] = useState<IMyResponse | null>(null);
+  const [responseToRestore, setResponseToRestore] = useState<IMyResponse | null>(null);
+  const [selectedResponse, setSelectedResponse] = useState<IMyResponse | null>(null);
 
   const [pagination, setPagination] = useState({
     total: 0,
@@ -95,7 +101,7 @@ export function IntentManagementPage() {
     },
   });
 
-  const fetchIntentsData = async (filters?: z.infer<typeof filterSchema>) => {
+  const fetchResponsesData = async (filters?: z.infer<typeof filterSchema>) => {
     try {
       setIsDataLoading(true);
       
@@ -109,10 +115,11 @@ export function IntentManagementPage() {
         endDate: form.getValues("endDate"),
       };
 
-      const response: ListIntentResponse = await intentService.fetchIntents(queryParams);
+      const queryString = createMyReponseQuery(queryParams);
+      const response: ListMyResponseResult = await responseService.fetchResponses(queryString);
 
       if (response.success && Array.isArray(response.data)) {
-        setIntentsData(response.data);
+        setResponsesData(response.data);
         setPagination({
           total: response.meta.total,
           page: response.meta.page,
@@ -124,24 +131,24 @@ export function IntentManagementPage() {
       }
     } catch (err) {
       setError(
-        `Failed to fetch intents: ${
+        `Failed to fetch responses: ${
           err instanceof Error ? err.message : String(err)
         }`
       );
-      console.error("Error fetching intents:", err);
+      console.error("Error fetching responses:", err);
     } finally {
       setIsDataLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchIntentsData();
+    fetchResponsesData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, pagination.limit]);
 
   const onSubmit = (data: z.infer<typeof filterSchema>) => {
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchIntentsData({
+    fetchResponsesData({
       page: 1,
       limit: data.limit || pagination.limit,
       search: data.search,
@@ -156,84 +163,81 @@ export function IntentManagementPage() {
     setPagination((prev) => ({ ...prev, page }));
   };
 
-  const handleAskDeleteIntent = (intent: IIntent) => {
-    setIntentToDelete(intent);
-    if (intent.deleted) {
+  const handleAskDeleteResponse = (response: IMyResponse) => {
+    setResponseToDelete(response);
+    if (response.deleted) {
       setConfirmHardDeleteOpen(true);
     } else {
       setConfirmSoftDeleteOpen(true);
     }
   };
 
-  const handleCreateIntent = () => {
-    navigate("/intents/new");
-  };
-
-  const handleEditIntent = (intent: IIntent) => {
-    navigate("/intents/edit", { state: { intent } });
+  const handleEditResponse = (response: IMyResponse) => {
+    setSelectedResponse(response);
+    setEditDialogOpen(true);
   };
 
   const handleConfirmSoftDelete = async () => {
-    if (intentToDelete) {
+    if (responseToDelete) {
       try {
-        await intentService.softDeleteIntent(intentToDelete._id);
-        setIntentToDelete(null);
+        await responseService.softDeleteResponse(responseToDelete._id);
+        setResponseToDelete(null);
         setConfirmSoftDeleteOpen(false);
-        fetchIntentsData();
+        fetchResponsesData();
       } catch (error) {
-        console.error("Error soft deleting intent:", error);
+        console.error("Error soft deleting response:", error);
       }
     }
   };
 
   const handleConfirmHardDelete = async () => {
-    if (intentToDelete) {
+    if (responseToDelete) {
       try {
-        await intentService.hardDeleteIntent(intentToDelete._id);
-        setIntentToDelete(null);
+        await responseService.hardDeleteResponse(responseToDelete._id);
+        setResponseToDelete(null);
         setConfirmHardDeleteOpen(false);
-        fetchIntentsData();
+        fetchResponsesData();
       } catch (error) {
-        console.error("Error hard deleting intent:", error);
+        console.error("Error hard deleting response:", error);
       }
     }
   };
 
-  const handleAskRestoreIntent = (intent: IIntent) => {
-    setIntentToRestore(intent);
+  const handleAskRestoreResponse = (response: IMyResponse) => {
+    setResponseToRestore(response);
     setConfirmRestoreOpen(true);
   };
 
   const handleConfirmRestore = async () => {
-    if (intentToRestore) {
+    if (responseToRestore) {
       try {
-        await intentService.restoreIntent(intentToRestore._id);
-        setIntentToRestore(null);
+        await responseService.restoreResponse(responseToRestore._id);
+        setResponseToRestore(null);
         setConfirmRestoreOpen(false);
-        fetchIntentsData();
+        fetchResponsesData();
       } catch (error) {
-        console.error("Error restoring intent:", error);
+        console.error("Error restoring response:", error);
       }
     }
   };
 
-  const handleViewDetails = (intent: IIntent) => {
-    setSelectedIntentId(intent._id);
+  const handleViewDetails = (response: IMyResponse) => {
+    setSelectedResponse(response);
     setDetailsDialogOpen(true);
   };
 
-  // const refreshIntents = () => {
-  //   setPagination((prev) => ({ ...prev, page: 1 }));
-  //   fetchIntentsData({
-  //     page: 1,
-  //     limit: pagination.limit,
-  //     search: form.getValues("search"),
-  //     deleted: form.getValues("deleted"),
-  //     sort: form.getValues("sort"),
-  //     startDate: form.getValues("startDate"),
-  //     endDate: form.getValues("endDate"),
-  //   });
-  // };
+  const refreshResponses = () => {
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchResponsesData({
+      page: 1,
+      limit: pagination.limit,
+      search: form.getValues("search"),
+      deleted: form.getValues("deleted"),
+      sort: form.getValues("sort"),
+      startDate: form.getValues("startDate"),
+      endDate: form.getValues("endDate"),
+    });
+  };
 
   return (
     <div className="relative">
@@ -256,7 +260,7 @@ export function IntentManagementPage() {
                       <Input
                         id="search"
                         type="search"
-                        placeholder={t("Search intents")}
+                        placeholder={t("Search responses")}
                         className="w-full rounded-lg bg-background pl-8"
                         {...field}
                       />
@@ -280,7 +284,7 @@ export function IntentManagementPage() {
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader>
-                  <DrawerTitle>{t("Filter Intents")}</DrawerTitle>
+                  <DrawerTitle>{t("Filter Responses")}</DrawerTitle>
                 </DrawerHeader>
                 <div className="grid gap-4 p-4">
                   <FormField
@@ -291,15 +295,15 @@ export function IntentManagementPage() {
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id="intent-filter-deleted"
+                              id="response-filter-deleted"
                               checked={field.value}
                               onCheckedChange={field.onChange}
                             />
                             <label
-                              htmlFor="intent-filter-deleted"
+                              htmlFor="response-filter-deleted"
                               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                             >
-                              {t("Show deleted intents")}
+                              {t("Show deleted responses")}
                             </label>
                           </div>
                         </FormControl>
@@ -467,7 +471,7 @@ export function IntentManagementPage() {
                               </PopoverContent>
                             </Popover>
                             <span className="text-sm font-medium leading-none">
-                              {t("intents / page")}
+                              {t("responses / page")}
                             </span>
                           </FormItem>
                         </FormControl>
@@ -486,19 +490,19 @@ export function IntentManagementPage() {
 
           <div className="flex-1"></div>
           <Button
-            onClick={handleCreateIntent}
+            onClick={() => setCreateDialogOpen(true)}
             variant="default"
             className="bg-green-600 hover:bg-green-700"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {t("Create Intent")}
+            {t("Create Response")}
           </Button>
         </form>
       </Form>
 
       {error ? (
         <div className="p-8 text-center">
-          <div className="text-red-500 mb-2">{t("Error loading intents")}</div>
+          <div className="text-red-500 mb-2">{t("Error loading responses")}</div>
           <div className="text-sm text-muted-foreground">
             {error}
           </div>
@@ -539,14 +543,18 @@ export function IntentManagementPage() {
                     column.toggleSorting(column.getIsSorted() === "asc")
                   }
                 >
-                  {t("Intent Name")}
+                  {t("Response Name")}
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               ),
               cell: ({ row }) => (
-                <div className="font-medium">
+                <Button
+                  variant="link"
+                  onClick={() => handleViewDetails(row.original)}
+                  className="p-0"
+                >
                   {row.getValue("name")}
-                </div>
+                </Button>
               ),
             },
             {
@@ -567,6 +575,64 @@ export function IntentManagementPage() {
                   {row.getValue("description") || t("No description")}
                 </div>
               ),
+            },
+            {
+              accessorKey: "roles",
+              header: t("Roles"),
+              cell: ({ row }) => {
+                const roles = row.getValue("roles") as string[];
+                
+                return (
+                  <div className="flex gap-1 flex-wrap">
+                    {roles && roles.length > 0 ? (
+                      roles.map((role, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {role}
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-muted-foreground text-sm">{t("No roles")}</span>
+                    )}
+                  </div>
+                );
+              },
+            },
+            {
+              accessorKey: "define",
+              header: t("Definition"),
+              cell: ({ row }) => {
+                const define = row.getValue("define") as string;
+                const preview = define ? define.substring(0, 50) + (define.length > 50 ? "..." : "") : t("No definition");
+                
+                return (
+                  <div className="text-sm">
+                    {define ? (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8">
+                            {t("View YAML")}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-[500px] max-h-[400px] overflow-y-auto"
+                          align="start"
+                        >
+                          <div className="p-2">
+                            <h4 className="font-medium mb-2">
+                              {t("YAML Definition")}
+                            </h4>
+                            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+                              {define}
+                            </pre>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    ) : (
+                      <span className="text-muted-foreground">{preview}</span>
+                    )}
+                  </div>
+                );
+              },
             },
             {
               accessorKey: "createdAt",
@@ -591,22 +657,21 @@ export function IntentManagementPage() {
               id: "actions",
               header: t("Actions"),
               cell: ({ row }) => {
-                const intent = row.original;
-                const isDeleted = intent.deleted;
+                const response = row.original;
+                const isDeleted = response.deleted;
                 
                 return (
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleViewDetails(intent)}
+                      onClick={() => handleViewDetails(response)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
-                      title={t("View details")}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
                     {!isDeleted && (
                       <Button
-                        onClick={() => handleEditIntent(intent)}
+                        onClick={() => handleEditResponse(response)}
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700"
                       >
@@ -618,7 +683,7 @@ export function IntentManagementPage() {
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
-                          onClick={() => handleAskRestoreIntent(intent)}
+                          onClick={() => handleAskRestoreResponse(response)}
                           title={t("Restore from trash")}
                         >
                           <RotateCcw className="h-4 w-4" />
@@ -626,7 +691,7 @@ export function IntentManagementPage() {
                         <Button
                           size="sm"
                           className="bg-red-700 hover:bg-red-800"
-                          onClick={() => handleAskDeleteIntent(intent)}
+                          onClick={() => handleAskDeleteResponse(response)}
                           title={t("Delete permanently")}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -636,7 +701,7 @@ export function IntentManagementPage() {
                       <Button
                         size="sm"
                         className="bg-orange-600 hover:bg-orange-700"
-                        onClick={() => handleAskDeleteIntent(intent)}
+                        onClick={() => handleAskDeleteResponse(response)}
                         title={t("Move to trash")}
                       >
                         <Archive className="h-4 w-4" />
@@ -647,7 +712,7 @@ export function IntentManagementPage() {
               },
             },
           ]}
-          data={intentsData}
+          data={responsesData}
           meta={pagination}
           onChangePage={handlePageChange}
           isLoading={isDataLoading}
@@ -655,6 +720,26 @@ export function IntentManagementPage() {
           setRowSelection={setRowSelection}
         />
       )}
+
+
+      <CreateResponseDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onResponseCreated={refreshResponses}
+      />
+
+      <EditResponseDialog
+        response={selectedResponse}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onResponseUpdated={refreshResponses}
+      />
+
+       <ResponseDetailsDialog
+        response={selectedResponse}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
 
       <ConfirmSoftDeleteDialog
         open={confirmSoftDeleteOpen}
@@ -672,12 +757,6 @@ export function IntentManagementPage() {
         open={confirmRestoreOpen}
         onOpenChange={setConfirmRestoreOpen}
         onConfirm={handleConfirmRestore}
-      />
-
-      <IntentDetailsDialog
-        intentId={selectedIntentId}
-        open={detailsDialogOpen}
-        onOpenChange={setDetailsDialogOpen}
       />
 
       <div
