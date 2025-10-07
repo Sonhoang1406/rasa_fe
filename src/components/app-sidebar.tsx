@@ -119,11 +119,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: [
             {
               title: t("Roles"),
-              url: "role",
+              url: "roles",
             },
             {
               title: t("Permissions"),
-              url: "permission",
+              url: "permissions",
             },
           ],
         },
@@ -147,6 +147,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     };
   }, [t]);
+  console.log("Sidebar data:", data.navMain);
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader

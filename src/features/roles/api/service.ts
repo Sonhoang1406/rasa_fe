@@ -20,5 +20,10 @@ export const rolesService = {
     },
     deleteRole: async (id: string) : Promise<void> => {
         await axiosInstance.delete(ENDPOINTS.ROLE_ENDPOINTS.DELETE_ROLE(id)); 
+    },
+    getRoleById: async (id: string) : Promise<Role> => {
+        const response = await axiosInstance.get(`${ENDPOINTS.ROLE_ENDPOINTS.GET_ROLE_BY_ID}/${id}`);
+        return response.data.data;
     }
+
 }

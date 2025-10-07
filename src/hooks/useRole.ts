@@ -1,7 +1,8 @@
 import { CreateRoleRequest } from "@/features/roles/api/dto/CreateRoleRequest";
-import { ListRoleResponse } from "@/features/roles/api/dto/RoleResponse";
+import { ListRoleResponse, Role } from "@/features/roles/api/dto/RoleResponse";
 import { UpdateRoleRequest } from "@/features/roles/api/dto/UpdateRoleRequest";
 import { rolesService } from "@/features/roles/api/service";
+import { IRole } from "@/interfaces/role.interface";
 import { useState } from "react";
 
 export const useRole = () => {
@@ -56,8 +57,20 @@ export const useRole = () => {
             }
         };
 
+        const getRoleById = async (id: string): Promise<Role | null> => {
+            try{
+                const data = await rolesService.getRoleById(id);
+                return data;
+            }
+            catch(error){
+                const message = error instanceof Error ? error.message : "Failed to get role";
+                setErrorRole(message);
+                throw new Error(message);
+            }
+        }
 
 
 
-    return { roles, loading, errorRole, fetchRoles, updateRole,createRole, deleteRole };
+
+    return { roles, loading, errorRole, fetchRoles, updateRole,createRole, deleteRole,getRoleById };
 };

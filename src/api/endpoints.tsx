@@ -10,6 +10,7 @@ export default {
   },
   USER_ENDPOINTS: {
     PROFILE: "/api/v1/user/profile",
+    GET_ALL_USERS: "/api/v1/user",
   },
   ROLE_ENDPOINTS: {
     GET_ALL: "/api/v1/role/all",
@@ -17,6 +18,7 @@ export default {
     UPDATE_ROLE: "/api/v1/role",
     CREATE_ROLE: "/api/v1/role",
     DELETE_ROLE: (id: string) => `/api/v1/role/${id}/hard`,
+    GET_ROLE_BY_ID: "/api/v1/role",
   },
   PERMISSION_ENDPOINTS: {
     GET_ALL: "/api/v1/permission/all",

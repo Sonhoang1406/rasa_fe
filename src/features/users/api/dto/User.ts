@@ -1,7 +1,4 @@
-import { Role } from "@/features/roles/api/dto/RoleResponse";
-import { IRole } from "./role.interface";
-
-export interface IUser {
+export interface User {
   _id: string;
   email: string;
   firstName: string;
@@ -12,7 +9,7 @@ export interface IUser {
   phoneNumber: string;
   avatar: string;
   is2FAEnabled: boolean;
-  roles: Role[];
+  roles: string[];
   createdAt: string;
   updatedAt: string;
 }
