@@ -36,4 +36,32 @@ export default {
     SOFT_DELETE: (id: string) => `/api/v1/action/${id}/soft`,
     RESTORE: (id: string) => `/api/v1/action/${id}/restore`,
   },
+  ENTITY_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/entity",
+    GET_BY_ID: (id: string) => `/api/v1/entity/${id}`,
+    CREATE: "/api/v1/entity",
+    UPDATE: (id: string) => `/api/v1/entity/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/entity/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/entity/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/entity/${id}/restore`,
+  },
+  INTENT_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/intent",
+    GET_BY_ID: (id: string) => `/api/v1/intent/${id}`,
+    CREATE: "/api/v1/intent",
+    UPDATE: (id: string) => `/api/v1/intent/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/intent/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/intent/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/intent/${id}/restore`,
+  },
+  RESPONSE_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/my-response",
+    GET_BY_ID: (id: string) => `/api/v1/my-response/${id}`,
+    CREATE: "/api/v1/my-response",
+    UPDATE: (id: string) => `/api/v1/my-response/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/my-response/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/my-response/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/my-response/${id}/restore`,
+  },
+
 } as const;
