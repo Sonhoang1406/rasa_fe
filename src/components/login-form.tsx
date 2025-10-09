@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AspectRatio } from "@radix-ui/react-aspect-ratio";
 import { Link, useNavigate } from "react-router-dom"; // ✅ THÊM useNavigate
+import { AxiosError } from "axios";
 
 export function LoginForm({
   className,
@@ -33,9 +34,10 @@ export function LoginForm({
 
     try {
       await login({ usernameOrEmail, password });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as AxiosError<{message? : string}>;
       setError(
-        err.response?.data?.message ||
+        error.response?.data?.message ||
           "Login failed. Please check your credentials."
       );
     } finally {

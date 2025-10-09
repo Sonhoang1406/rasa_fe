@@ -15,7 +15,7 @@ export const useRegister = () => {
 
     try {
       const response = await authService.register(data);
-
+      
       console.log("Response từ API:", response);
       return response;
     } catch (err: any) {

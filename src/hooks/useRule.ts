@@ -20,7 +20,7 @@ export const useRule = () => {
       setIsLoading(false);
     }
   };
-
+  
   const createRule = async (data: CreateRuleRequest): Promise<RuleResponse> => {
     setIsLoading(true);
     try {

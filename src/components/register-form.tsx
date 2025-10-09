@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/popover";
 import { useRegister } from "../hooks/useRegister";
 import { useNavigate } from "react-router-dom";
+import { FcGoogle } from "react-icons/fc"
+import { FaFacebook } from "react-icons/fa"
 
 export function RegisterForm({
   className,
@@ -291,6 +293,38 @@ export function RegisterForm({
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
+            </div>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or sign up with
+                </span>
+              </div>
+            </div>
+           
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center gap-2"
+                >
+                  <FcGoogle size={20} /> Google
+                </Button>
+              </div>
+              <div className="flex gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center gap-2 text-blue-600"
+                >
+                  <FaFacebook size={20} /> Facebook
+                </Button>
+              </div>
             </div>
 
             <div className="mt-4 text-center text-sm">
