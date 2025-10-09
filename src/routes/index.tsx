@@ -5,7 +5,6 @@ import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 import { RoleManagement } from "@/features/roles";
 import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
-import { UserManagement } from "@/features/users/pages/UserManagement";
 
 const router = createBrowserRouter([
   {
@@ -18,7 +17,6 @@ const router = createBrowserRouter([
       { path: "profile", element: <UserProfilePage /> },
       { path: "roles", element: <RoleManagement /> },
       { path: "permissions", element: <PermissionManagement /> },
-      { path: "users", element: <UserManagement /> },
     ],
   },
   {

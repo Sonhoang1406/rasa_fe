@@ -27,4 +27,13 @@ export default {
     CREATE_PERMISSION: "/api/v1/permission",
     DELETE_PERMISSION: (id: string) => `/api/v1/permission/${id}/hard`,
   },
+  ACTION_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/action",
+    GET_BY_ID: (id: string) => `/api/v1/action/${id}`,
+    CREATE: "/api/v1/action",
+    UPDATE: (id: string) => `/api/v1/action/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/action/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/action/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/action/${id}/restore`,
+  },
 } as const;
