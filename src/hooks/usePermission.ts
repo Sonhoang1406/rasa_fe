@@ -1,67 +1,26 @@
+import { ListPermissionResponse } from "@/features/permissions/api/dto/permissions.dto";
+import { permissionsService } from "@/features/permissions/api/service";
 import { useState } from "react";
-import { permissionService } from "../lib/api/services/permission-service";
-import { PermissionListResponse, CreatePermissionRequest, UpdatePermissionRequest } from "@/lib/types/permission-type";
 
-export const usePermissions = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const usePermission = () => {
+    const [permissions, setPermissions] = useState<ListPermissionResponse | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  const fetchPermissions = async (query: string): Promise<PermissionListResponse> => {
-    setIsLoading(true);
-    try {
-      const response = await permissionService.getAllPermissions(query);
-      setError(null);
-      return response;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch permissions";
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const fetchPermissions = async (query: string) : Promise<ListPermissionResponse> => {
+        try {
+            const data = await permissionsService.fetchPermissions(query);
+            setPermissions(data);
+            setIsLoading(false);
+            return data;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to fetch permissions";
+            setError(message);
+            throw new Error(message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const createPermission = async (data: CreatePermissionRequest) => {
-    setIsLoading(true);
-    try {
-      await permissionService.createPermission(data);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to create permission";
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updatePermission = async (id: string, data: UpdatePermissionRequest) => {
-    setIsLoading(true);
-    try {
-      await permissionService.updatePermission(id, data);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to update permission";
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const deletePermission = async (id: string) => {
-    setIsLoading(true);
-    try {
-      await permissionService.deletePermission(id);
-      setError(null);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to delete permission";
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return { fetchPermissions, createPermission, updatePermission, deletePermission, isLoading, error };
-};
+    return { permissions, isLoading, error, fetchPermissions };
+}

@@ -8,6 +8,7 @@ import {
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import { ITableMeta, TablePagination } from "./table-pagination";
 import {
   Table,
   TableBody,
@@ -17,8 +18,6 @@ import {
   TableRow,
 } from "./ui/table";
 import { useEffect, useState } from "react";
-import { ITableMeta, TablePagination } from "./table-pagination";
-
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];

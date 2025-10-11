@@ -1,73 +1,76 @@
-import axios from 'axios';
+import axios from "axios";
+import ENDPOINTS from "@/api/endpoints";
+import { useAuthStore } from "@/store/auth";
 
-// Create axios instance with default config
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888',
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: () => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve();
+  });
+  failedQueue = [];
+};
+
+const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_BASE_URL || 'http://localhost:8888',
+  withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
+    'x-platform': 'WEB'
   },
 });
 
-// Request interceptor
-api.interceptors.request.use(
-  (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('authToken');
-    
-    // If token exists, add it to the headers
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+// Cấu hình interceptor cho request
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+});
 
-// Response interceptor
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+// Cấu hình interceptor cho response
+axiosInstance.interceptors.response.use(
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // If the error is 401 Unauthorized and has not been retried yet
+
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: () => resolve(axiosInstance(originalRequest)),
+            reject,
+          });
+        });
+      }
+
       originalRequest._retry = true;
-      
+      isRefreshing = true;
+
       try {
-        // Attempt to refresh token
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post(
-            `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8888'}/auth/refresh`,
-            { refreshToken }
-          );
-          
-          const { token } = response.data;
-          
-          // Update token in localStorage
-          localStorage.setItem('authToken', token);
-          
-          // Update Authorization header
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          
-          // Retry the original request
-          return api(originalRequest);
-        }
-      } catch (error) {
-        // If refresh token fails, redirect to login
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        const response = await axiosInstance.post(ENDPOINTS.AUTH_ENDPOINTS.REFRESH_TOKEN);
+        localStorage.setItem('authToken', response.data.data.accessToken);
+        
+
+        processQueue(null);
+        return axiosInstance(originalRequest);
+      } catch (err) {
+        useAuthStore.getState().logout();
+        processQueue(err);
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
 
-export default api;
+export default axiosInstance;

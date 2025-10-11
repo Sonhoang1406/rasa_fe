@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AspectRatio } from "@radix-ui/react-aspect-ratio";
-import { Link, useNavigate } from "react-router-dom"; // ✅ THÊM useNavigate
+import { Link, useNavigate } from "react-router-dom"; 
 import { AxiosError } from "axios";
 
 export function LoginForm({
@@ -25,7 +25,7 @@ export function LoginForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const navigate = useNavigate(); // ✅ SỬ DỤNG HOOK ĐIỀU HƯỚNG
+  const navigate = useNavigate(); //  SỬ DỤNG HOOK ĐIỀU HƯỚNG
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

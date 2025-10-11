@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Home } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Home } from "lucide-react";
 
-export function NotFound() {
+export function NotFoundPage() {
   const { t } = useTranslation();
   return (
     <div className="flex items-center min-h-screen px-4 py-12 sm:px-6 md:px-8 lg:px-12 xl:px-16">
