@@ -11,6 +11,7 @@ import {
   IntentManagementPage,
 } from "@/features/intents";
 import { ResponseManagement } from "@/features/reponses";
+import { UserManagement } from "@/features/users/pages/UserManagement";
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomeDirectorPage /> },
       { path: "home_chat", element: <HomeChat /> },
+      { path: "users", element: <UserManagement />},
       { path: "profile", element: <UserProfilePage /> },
       { path: "roles", element: <RoleManagement /> },
       { path: "entities", element: <EntityManagement /> },

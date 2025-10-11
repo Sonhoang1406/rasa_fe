@@ -30,11 +30,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useUser } from "@/hooks/useUser";
-import { IUser } from "@/interfaces/user.interface";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { t } from "i18next";
 import {
   ArrowUpDown,
   Ban,
@@ -50,12 +47,15 @@ import {
   Smartphone,
   Unlock,
 } from "lucide-react";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { UserDetailDialog } from "./UserDetailsDialog";
 import { User } from "../api/dto/User";
+import { userService } from "../api/service";
+import { ConfirmBanUserDialog } from "./ConfirmBanDialog";
+import { ConfirmUnbanUserDialog } from "./ConfirmUnbanDialog";
 
 const filterSchema = z.object({
   search: z.string().optional(),
@@ -85,15 +85,13 @@ export const UserManagement = () => {
   const [userToBan, setUserToBan] = useState<string | null>(null);
   const [userToUnban, setUserToUnban] = useState<string | null>(null);
 
-  const { getAllUsers } = useUser();
-
   const form = useForm<z.infer<typeof filterSchema>>({
     resolver: zodResolver(filterSchema),
     defaultValues: {
       search: "",
       deleted: false,
       page: 1,
-      limit: 10, // Đồng bộ với API
+      limit: 10,
     },
   });
   const fetchUsers = async () => {
@@ -106,16 +104,21 @@ export const UserManagement = () => {
       //     ...(deleted !== undefined && { deleted: deleted.toString() }),
       //   }).toString();
 
-      const response = await getAllUsers();
-      console.log("check user", response);
+      const values = form.getValues();
+      const response = await userService.getAllUsers({
+        page: pagination.page,
+        limit: values.limit,
+        search: values.search,
+        deleted: values.deleted,
+      });
 
-      if (response && Array.isArray(response)) {
-        setUsers(response);
+      if (response) {
+        setUsers(response.data);
         setPagination({
-          total: response.length,
-          page: 1,
-          limit: 10,
-          totalPages: Math.ceil(response.length / 10),
+          total: response.meta.total,
+          page: response.meta.page,
+          limit: response.meta.limit,
+          totalPages: response.meta.totalPages,
         });
       } else {
         setError("Invalid data format received from API");
@@ -136,6 +139,7 @@ export const UserManagement = () => {
     fetchUsers();
   }, [pagination.page, pagination.limit]);
 
+
   // Xử lý submit form (tìm kiếm, lọc)
   //   const onSubmit = (data: z.infer<typeof filterSchema>) => {
   //     fetchUsers(1, data.limit || data.limit, data.search, data.deleted);
@@ -147,62 +151,44 @@ export const UserManagement = () => {
       ...prev,
       page,
     }));
-    // API sẽ được gọi trong useEffect do page thay đổi
   };
 
-  //   const handleAskBanUser = (id: string) => {
-  //     setUserToBan(id);
-  //     setConfirmBanOpen(true);
-  //   };
+  const handleAskBanUser = (id: string) => {
+    setUserToBan(id);
+    setConfirmBanOpen(true);
+  };
 
-  //   const handleConfirmBan = async () => {
-  //     if (userToBan) {
-  //       try {
-  //         await banUser(userToBan);
-  //         toast.success("Ban user successfully");
-  //       } catch (err) {
-  //         console.error(err);
-  //         const errorMessage = err instanceof Error ? err.message : String(err);
-  //         toast.error(`Failed to ban user: ${errorMessage}`);
-  //       } finally {
-  //         setUserToBan(null);
-  //         setConfirmBanOpen(false);
-  //         fetchUsers(
-  //           pagination.page,
-  //           pagination.limit,
-  //           form.getValues("search"),
-  //           form.getValues("deleted")
-  //         );
-  //       }
-  //     }
-  //   };
+  const handleConfirmBan = async () => {
+    if (!userToBan) return;
+    try {
+      await userService.banUser(userToBan);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUserToBan(null);
+      setConfirmBanOpen(false); // <- tự động đóng dialog
+    }
+  };
 
-  //   const handleAskUnbanUser = (id: string) => {
-  //     setUserToUnban(id);
-  //     setConfirmUnbanOpen(true);
-  //   };
+  const handleAskUnbanUser = (id: string) => {
+    setUserToUnban(id);
+    setConfirmUnbanOpen(true);
+  };
 
-  //   const handleUnbanUser = async () => {
-  //     if (userToUnban) {
-  //       try {
-  //         await unbanUser(userToUnban);
-  //         toast.success("Unban user successfully");
-  //       } catch (err) {
-  //         console.error(err);
-  //         const errorMessage = err instanceof Error ? err.message : String(err);
-  //         toast.error(`Failed to unban user: ${errorMessage}`);
-  //       } finally {
-  //         setUserToUnban(null);
-  //         setConfirmUnbanOpen(false);
-  //         fetchUsers(
-  //           pagination.page,
-  //           pagination.limit,
-  //           form.getValues("search"),
-  //           form.getValues("deleted")
-  //         );
-  //       }
-  //     }
-  //   };
+  const handleUnbanUser = async () => {
+    if (!userToUnban) return;
+    try {
+      await userService.unbanUser(userToUnban);
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUserToUnban(null);
+      setConfirmUnbanOpen(false); // <- tự động đóng dialog
+    }
+  };
+
 
   const refreshUsers = () => {
     fetchUsers();
@@ -230,7 +216,10 @@ export const UserManagement = () => {
       <Form {...form}>
         <form
           className="table-controller py-4 flex gap-4"
-          //   onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit((data) => {
+            setPagination((prev) => ({ ...prev, page: 1 })); // reset page
+            fetchUsers(); // sẽ dùng giá trị search mới từ form
+          })}
         >
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <div className="relative">
@@ -399,135 +388,137 @@ export const UserManagement = () => {
           <div className="text-sm text-muted-foreground">{error}</div>
         </div>
       ) : (
-        <DataTable
-          columns={[
-            {
-              id: "select",
-              header: ({ table }) => (
-                <Checkbox
-                  checked={
-                    table.getIsAllPageRowsSelected() ||
-                    (table.getIsSomePageRowsSelected() && "indeterminate")
-                  }
-                  onCheckedChange={(value) =>
-                    table.toggleAllPageRowsSelected(!!value)
-                  }
-                  aria-label="Select all"
-                />
-              ),
-              cell: ({ row }) => (
-                <Checkbox
-                  checked={row.getIsSelected()}
-                  onCheckedChange={(value) => row.toggleSelected(!!value)}
-                  aria-label="Select row"
-                />
-              ),
-              enableSorting: false,
-              enableHiding: false,
-            },
-            {
-              accessorKey: "firstName",
-              header: ({ column }) => {
-                return (
-                  <Button
-                    variant="ghost"
-                    onClick={() =>
-                      column.toggleSorting(column.getIsSorted() === "asc")
+        <>
+          <DataTable
+            columns={[
+              {
+                id: "select",
+                header: ({ table }) => (
+                  <Checkbox
+                    checked={
+                      table.getIsAllPageRowsSelected() ||
+                      (table.getIsSomePageRowsSelected() && "indeterminate")
                     }
-                  >
-                    Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                );
-              },
-            },
-            { accessorKey: "email", header: "Email" },
-            { accessorKey: "phoneNumber", header: "Phone" },
-            {
-              accessorKey: "dateOfBirth",
-              header: "Birthday",
-              cell: ({ row }) =>
-                new Date(row.original.dateOfBirth).toLocaleDateString(),
-            },
-            { accessorKey: "gender", header: "Gender" },
-            {
-              accessorKey: "isVerified",
-              header: "Verified",
-              cell: ({ row }) =>
-                row.original.is2FAEnabled ? (
-                  <Badge className="bg-green-600">Yes</Badge>
-                ) : (
-                  <Badge className="bg-red-600">No</Badge>
+                    onCheckedChange={(value) =>
+                      table.toggleAllPageRowsSelected(!!value)
+                    }
+                    aria-label="Select all"
+                  />
                 ),
-            },
-            {
-              id: "actions",
-              header: "Actions",
-              cell: ({ row }) => (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => handleViewUser(row.original)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {/* <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => handleEditUser(row.original)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button> */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="bg-yellow-600 text-white hover:bg-yellow-700"
-                    // onClick={() => handleViewDevice(row.original)}
-                  >
-                    <Smartphone className="h-4 w-4" />
-                  </Button>
-                  {/* <Button
-                    size="sm"
-                    className={
-                      row.original.deleted
-                        ? "bg-green-600 hover:bg-green-700"
-                        : "bg-red-600 hover:bg-red-700"
-                    }
-                    onClick={() =>
-                      row.original.deleted
-                        ? handleAskUnbanUser(row.original._id)
-                        : handleAskBanUser(row.original._id)
-                    }
-                  >
-                    {row.original.deleted ? (
-                      <Unlock className="h-4 w-4" />
-                    ) : (
-                      <Ban className="h-4 w-4" />
-                    )}
-                  </Button> */}
+                cell: ({ row }) => (
+                  <Checkbox
+                    checked={row.getIsSelected()}
+                    onCheckedChange={(value) => row.toggleSelected(!!value)}
+                    aria-label="Select row"
+                  />
+                ),
+                enableSorting: false,
+                enableHiding: false,
+              },
+              {
+                accessorKey: "firstName",
+                header: ({ column }) => {
+                  return (
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        column.toggleSorting(column.getIsSorted() === "asc")
+                      }
+                    >
+                      Name
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  );
+                },
+              },
+              { accessorKey: "email", header: "Email" },
+              { accessorKey: "phoneNumber", header: "Phone" },
+              {
+                accessorKey: "dateOfBirth",
+                header: "Birthday",
+                cell: ({ row }) =>
+                  new Date(row.original.dateOfBirth).toLocaleDateString(),
+              },
+              { accessorKey: "gender", header: "Gender" },
+              {
+                accessorKey: "isVerified",
+                header: "Verified",
+                cell: ({ row }) =>
+                  row.original.is2FAEnabled ? (
+                    <Badge className="bg-green-600">Yes</Badge>
+                  ) : (
+                    <Badge className="bg-red-600">No</Badge>
+                  ),
+              },
+              {
+                accessorKey: "status",
+                header: "Status",
+                cell: ({row}) => {
+                  const status = row.original.status;
 
-                  {/* <ConfirmBanUserDialog
-                    open={confirmBanOpen}
-                    onOpenChange={setConfirmBanOpen}
-                    onConfirm={handleConfirmBan}
-                  /> */}
-                  {/* <ConfirmUnbanUserDialog
-                    open={confirmUnbanOpen}
-                    onOpenChange={setConfirmUnbanOpen}
-                    onConfirm={handleUnbanUser}
-                  /> */}
-                </div>
-              ),
-            },
-          ]}
-          data={users}
-          meta={pagination}
-          onChangePage={handlePageChange}
-          isLoading={isLoading}
-          rowSelection={rowSelection}
-          setRowSelection={setRowSelection}
-        />
+                  let className = "bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"; // PENDING
+                  if (status === "ACTIVE")
+                    className = "bg-green-200 text-green-800 hover:bg-green-300 transition-colors"; // ACTIVE
+                  if (status === "BANNED")
+                    className = "bg-red-200 text-red-800 hover:bg-red-300 transition-colors"; // BANNED
+
+                  return <Badge className={className}>{status}</Badge>;
+                } 
+              },
+              {
+                id: "actions",
+                header: "Actions",
+                cell: ({ row }) => {
+                  const isBanned = row.original.status === "BANNED"; // lấy từ dữ liệu row
+
+                  return (
+                    <div className="flex gap-2">
+                      {/* View User */}
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => handleViewUser(row.original)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+
+                      {/* Device (nếu có) */}
+                      {/* <Button
+                        variant="ghost"
+                        size="sm"
+                        className="bg-yellow-600 text-white hover:bg-yellow-700"
+                      >
+                        <Smartphone className="h-4 w-4" />
+                      </Button> */}
+
+                      <Button
+                        size="sm"
+                        className={
+                          !isBanned
+                            ? "bg-red-600 hover:bg-red-700"
+                            : "bg-green-600 hover:bg-green-700"
+                        }
+                        onClick={() =>
+                          !isBanned
+                            ? handleAskBanUser(row.original._id)
+                            : handleAskUnbanUser(row.original._id)
+                        }
+                      >
+                        {!isBanned ? <Ban className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  );
+                },
+              },
+            ]}
+            data={users}
+            meta={pagination}
+            onChangePage={handlePageChange}
+            isLoading={isLoading}
+            rowSelection={rowSelection}
+            setRowSelection={setRowSelection}
+          />
+        </>
       )}
 
       {/* Edit User Dialog */}
@@ -540,6 +531,17 @@ export const UserManagement = () => {
         user={selectedUser}
         open={viewDialogOpen}
         onOpenChange={setViewDialogOpen}
+      />
+      <ConfirmBanUserDialog
+        open={confirmBanOpen}
+        onOpenChange={setConfirmBanOpen}
+        onConfirm={handleConfirmBan}
+      />
+
+      <ConfirmUnbanUserDialog
+        open={confirmUnbanOpen}
+        onOpenChange={setConfirmUnbanOpen}
+        onConfirm={handleUnbanUser}
       />
       {/* <ShowDevicesDialog
         user={selectedUser}
