@@ -55,24 +55,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               url: "/entities",
             },
             {
+              title: "Actions",
+              url: "/actions",
+            },
+            {
+              title: "Rules",
+              url: "/rules",
+            },
+            {
               title: "Stories",
               url: "/stories",
             },
-            // {
-            //   title: "Rules",
-            //   url: "/rules",
-            // },
-            // {
-            //   title: "Responses",
-            //   url: "/responses",
-            // },
+            {
+              title: "Responses",
+              url: "/responses",
+            },
             {
               title: "Slots",
               url: "/slots",
-            },
-            {
-              title: "Rule",
-              url: "/rule",
             },
             {
               title: "Chat Bot",
@@ -81,10 +81,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {
               title: "UQuestion",
               url: "/uquestion",
-            },
-            {
-              title: "Actions",
-              url: "/actions",
             },
           ],
         },

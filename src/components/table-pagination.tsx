@@ -30,6 +30,9 @@ export const TablePagination = ({
 }) => {
   if (isLoading) return <PaginationSkeleton />;
 
+  // Don't render pagination when there are no results
+  if (meta.totalPages === 0) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}

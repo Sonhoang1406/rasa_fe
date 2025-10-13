@@ -11,6 +11,12 @@ import {
   IntentManagementPage,
 } from "@/features/intents";
 import { ResponseManagement } from "@/features/reponses";
+import { ActionManagement } from "@/features/action";
+import {
+  CreateRulePageSimple,
+  EditRulePageNew,
+  RuleManagementPage,
+} from "@/features/rules";
 
 const router = createBrowserRouter([
   {
@@ -29,6 +35,16 @@ const router = createBrowserRouter([
           { index: true, element: <IntentManagementPage /> },
           { path: "new", element: <CreateIntentPage /> },
           { path: "edit", element: <EditIntentPage /> },
+        ],
+      },
+      { path: "actions", element: <ActionManagement /> },
+      { path: "responses", element: <ResponseManagement /> },
+      {
+        path: "rules",
+        children: [
+          { index: true, element: <RuleManagementPage /> },
+          { path: "new", element: <CreateRulePageSimple /> },
+          { path: "edit", element: <EditRulePageNew /> },
         ],
       },
       { path: "responses", element: <ResponseManagement /> },
