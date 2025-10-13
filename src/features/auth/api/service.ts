@@ -6,8 +6,8 @@ import { RegisterResponse } from "./dto/RegisterResponse";
 import { MeResponse } from "./dto/MeResponse";
 import { IUser } from "@/interfaces/user.interface";
 import { UpdateMeRequest } from "./dto/UpdateMeRequest";
-import { ForgotPasswordResponse } from "./dto/ForgotPasswordRespone";
-import { ForgotPasswordRequest } from "./dto/ForgotPasswordRequest";
+import { ForgotPasswordRequest, ForgotPasswordResponse } from "./dto/ForgotPassword";
+import { ResetPasswordRequest, ResetPasswordResponse } from "./dto/ResetPassword";
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
@@ -28,12 +28,16 @@ export const authService = {
     const response = await axiosInstance.post(ENDPOINTS.AUTH_ENDPOINTS.FORGOT_PASSWORD, data);
     return response.data?.data ?? response.data;
   },
-    getMe: async (): Promise<IUser> => {
+  resetPassword: async (data: ResetPasswordRequest): Promise<ResetPasswordResponse> => {
+  const response = await axiosInstance.post(ENDPOINTS.AUTH_ENDPOINTS.RESET_PASSWORD, data);
+  return response.data?.data ?? response.data;
+  },
+  getMe: async (): Promise<IUser> => {
     const response = await axiosInstance.get(ENDPOINTS.AUTH_ENDPOINTS.ME);
     return response.data.data;
   },
     updateMe: async (data: UpdateMeRequest): Promise<IUser> => {
     const response = await axiosInstance.put(ENDPOINTS.AUTH_ENDPOINTS.UPDATE_ME, data);
     return response.data.data;
-  }
+  },
 }

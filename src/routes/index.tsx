@@ -7,6 +7,8 @@ import { RoleManagement } from "@/features/roles";
 import { EntityManagement } from "@/features/entity";
 import { CreateIntentPage, EditIntentPage, IntentManagementPage } from "@/features/intents";
 import { ResponseManagement } from "@/features/reponses";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 
 const router = createBrowserRouter([
   {
@@ -44,6 +46,14 @@ const router = createBrowserRouter([
       {
         path: "verify",
         element: <VerifyPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage/>
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage/>
       },
     ],
   },

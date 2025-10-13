@@ -1,3 +1,7 @@
+export interface ForgotPasswordRequest  {
+    email: string,
+}
+
 export interface ForgotPasswordResponse {
   accessToken: string
   refreshToken: string | null
