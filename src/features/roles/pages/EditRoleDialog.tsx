@@ -263,7 +263,7 @@ export default function EditRoleDialog({
                                 >
                                   <AccordionTrigger className="px-4 py-3 hover:bg-muted/50">
                                     <div className="flex items-center justify-between w-full pr-4">
-                                      <div className="font-medium">
+                                      <div className="font-medium ">
                                         {t("Module")}: {module}
                                       </div>
                                       <div

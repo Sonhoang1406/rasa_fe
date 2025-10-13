@@ -426,12 +426,12 @@ export function RoleManagement() {
             <span>{t("Search")}</span>
           </Button>
           <Drawer>
-            <DrawerTrigger asChild>
+            {/* <DrawerTrigger asChild>
               <Button className="bg-blue-600">
                 <SlidersHorizontal className="mr-2 h-4 w-4" />
                 <span>{t("Filter")}</span>
               </Button>
-            </DrawerTrigger>
+            </DrawerTrigger> */}
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader>
