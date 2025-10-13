@@ -11,6 +11,10 @@ import {
   IntentManagementPage,
 } from "@/features/intents";
 import { ResponseManagement } from "@/features/reponses";
+import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
+import { UserManagement } from "@/features/users/pages/UserManagement";
+import { ActionManagement } from "@/features/action";
+import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 
 const router = createBrowserRouter([
   {
@@ -19,10 +23,12 @@ const router = createBrowserRouter([
     errorElement: <NotFoundPage />,
     children: [
       { index: true, element: <HomeDirectorPage /> },
-      { path: "home_chat", element: <HomeChat /> },
+      { path: "home_chat", element: <HomeChatDemo /> },
       { path: "profile", element: <UserProfilePage /> },
       { path: "roles", element: <RoleManagement /> },
+      { path: "permissions", element: <PermissionManagement /> },
       { path: "entities", element: <EntityManagement /> },
+      { path: "users", element: <UserManagement /> },
       {
         path: "intents",
         children: [
@@ -32,6 +38,7 @@ const router = createBrowserRouter([
         ],
       },
       { path: "responses", element: <ResponseManagement /> },
+      { path: "actions", element: <ActionManagement /> },
     ],
   },
   {

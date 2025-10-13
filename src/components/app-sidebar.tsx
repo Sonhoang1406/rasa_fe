@@ -42,10 +42,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: Bot,
           hidden: false,
           items: [
-            {
-              title: "Training",
-              url: "/training",
-            },
+            // {
+            //   title: "Training",
+            //   url: "/training",
+            // },
             {
               title: "Intents",
               url: "/intents",
@@ -54,34 +54,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               title: "Entities",
               url: "/entities",
             },
-            {
-              title: "Stories",
-              url: "/stories",
-            },
+            // {
+            //   title: "Stories",
+            //   url: "/stories",
+            // },
             // {
             //   title: "Rules",
             //   url: "/rules",
             // },
+            {
+              title: "Responses",
+              url: "/responses",
+            },
             // {
-            //   title: "Responses",
-            //   url: "/responses",
+            //   title: "Slots",
+            //   url: "/slots",
             // },
-            {
-              title: "Slots",
-              url: "/slots",
-            },
-            {
-              title: "Rule",
-              url: "/rule",
-            },
-            {
-              title: "Chat Bot",
-              url: "/chat_bot",
-            },
-            {
-              title: "UQuestion",
-              url: "/uquestion",
-            },
+            // {
+            //   title: "Rule",
+            //   url: "/rule",
+            // },
+            // {
+            //   title: "Chat Bot",
+            //   url: "/chat_bot",
+            // },
+            // {
+            //   title: "UQuestion",
+            //   url: "/uquestion",
+            // },
             {
               title: "Actions",
               url: "/actions",

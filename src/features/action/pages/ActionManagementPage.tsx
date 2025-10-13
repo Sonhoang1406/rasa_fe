@@ -1,16 +1,43 @@
-"use client";
-
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui/command";
-import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import {
+  Command,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown, Edit, Eye, Plus, SearchIcon, SlidersHorizontal, Trash2, Archive, RotateCcw, Code } from "lucide-react";
+import {
+  Check,
+  ChevronsUpDown,
+  Edit,
+  Eye,
+  Plus,
+  SearchIcon,
+  SlidersHorizontal,
+  Trash2,
+  Archive,
+  RotateCcw,
+  Code,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,7 +48,10 @@ import { ListActionResponse } from "../api/dto/ActionResponse";
 import { actionService } from "../api/service";
 import CreateActionDialog from "../components/CreateActionDialog";
 import UpdateActionDialog from "../components/UpdateActionDialog";
-import { ConfirmSoftDeleteDialog, ConfirmHardDeleteDialog } from "@/components/confirm-delete-dialog";
+import {
+  ConfirmSoftDeleteDialog,
+  ConfirmHardDeleteDialog,
+} from "@/components/confirm-delete-dialog";
 import { ConfirmRestoreDialog } from "@/components/confirm-restore-dialog";
 
 const filterSchema = z.object({
@@ -76,7 +106,9 @@ export function ActionManagement() {
     try {
       setIsDataLoading(true);
       const queryParams = filters || { ...pagination, ...form.getValues() };
-      const response: ListActionResponse = await actionService.fetchActions(queryParams);
+      const response: ListActionResponse = await actionService.fetchActions(
+        queryParams
+      );
 
       if (response.success && Array.isArray(response.data)) {
         setActionsData(response.data);
@@ -90,7 +122,11 @@ export function ActionManagement() {
         throw new Error("Invalid data format received from API");
       }
     } catch (err) {
-      setError(`Failed to fetch actions: ${err instanceof Error ? err.message : String(err)}`);
+      setError(
+        `Failed to fetch actions: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
       console.error("Error fetching actions:", err);
     } finally {
       setIsDataLoading(false);
@@ -99,7 +135,7 @@ export function ActionManagement() {
 
   useEffect(() => {
     fetchActionsData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.page, pagination.limit]);
 
   const onSubmit = (data: z.infer<typeof filterSchema>) => {
@@ -180,19 +216,29 @@ export function ActionManagement() {
               control={form.control}
               name="search"
               render={({ field }) => (
-                <Input placeholder={t("Search actions")} className="w-full pl-8" {...field} />
+                <Input
+                  placeholder={t("Search actions")}
+                  className="w-full pl-8"
+                  {...field}
+                />
               )}
             />
           </div>
-          <Button type="submit"><SearchIcon className="mr-2 h-4 w-4" />{t("Search")}</Button>
+          <Button type="submit">
+            <SearchIcon className="mr-2 h-4 w-4" />
+            {t("Search")}
+          </Button>
           <Drawer>
             <DrawerTrigger asChild>
-              <Button variant="outline"><SlidersHorizontal className="mr-2 h-4 w-4" />{t("Filter")}</Button>
+              <Button variant="outline">
+                <SlidersHorizontal className="mr-2 h-4 w-4" />
+                {t("Filter")}
+              </Button>
             </DrawerTrigger>
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader>
-                    <DrawerTitle>{t("Filter Actions")}</DrawerTitle>
+                  <DrawerTitle>{t("Filter Actions")}</DrawerTitle>
                 </DrawerHeader>
                 <div className="grid gap-4 p-4">
                   <FormField
@@ -218,7 +264,7 @@ export function ActionManagement() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="sort"
@@ -236,13 +282,11 @@ export function ActionManagement() {
                                   role="combobox"
                                   className="w-full justify-between"
                                 >
-                                  {
-                                    field.value === "DESC"
-                                      ? t("Newest first")
-                                      : field.value === "ASC"
-                                      ? t("Oldest first")
-                                      : t("Select sort")
-                                  }
+                                  {field.value === "DESC"
+                                    ? t("Newest first")
+                                    : field.value === "ASC"
+                                    ? t("Oldest first")
+                                    : t("Select sort")}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                                 </Button>
                               </PopoverTrigger>
@@ -251,8 +295,14 @@ export function ActionManagement() {
                                   <CommandList>
                                     <CommandGroup>
                                       {[
-                                        { value: "DESC", label: t("Newest first") },
-                                        { value: "ASC", label: t("Oldest first") },
+                                        {
+                                          value: "DESC",
+                                          label: t("Newest first"),
+                                        },
+                                        {
+                                          value: "ASC",
+                                          label: t("Oldest first"),
+                                        },
                                       ].map((option) => (
                                         <CommandItem
                                           key={option.value}
@@ -385,9 +435,9 @@ export function ActionManagement() {
                   />
                 </div>
                 <DrawerFooter>
-                    <DrawerClose asChild>
-                        <Button variant="outline">{t("Close")}</Button>
-                    </DrawerClose>
+                  <DrawerClose asChild>
+                    <Button variant="outline">{t("Close")}</Button>
+                  </DrawerClose>
                 </DrawerFooter>
               </div>
             </DrawerContent>
@@ -405,39 +455,45 @@ export function ActionManagement() {
       </Form>
 
       {error ? (
-        <div className="p-8 text-center text-red-500">{t("Error loading actions")}: {error}</div>
+        <div className="p-8 text-center text-red-500">
+          {t("Error loading actions")}: {error}
+        </div>
       ) : (
         <DataTable
           columns={[
-            { 
-                id: "select",
-                header: ({ table }) => (
-                    <Checkbox
-                    checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                    }
-                    onCheckedChange={(value) =>
-                        table.toggleAllPageRowsSelected(!!value)
-                    }
-                    aria-label="Select all"
-                    />
-                ),
-                cell: ({ row }) => (
-                    <Checkbox
-                    checked={row.getIsSelected()}
-                    onCheckedChange={(value) => row.toggleSelected(!!value)}
-                    aria-label="Select row"
-                    />
-                ),
-                enableSorting: false,
-                enableHiding: false,
+            {
+              id: "select",
+              header: ({ table }) => (
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                  }
+                  onCheckedChange={(value) =>
+                    table.toggleAllPageRowsSelected(!!value)
+                  }
+                  aria-label="Select all"
+                />
+              ),
+              cell: ({ row }) => (
+                <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+                  aria-label="Select row"
+                />
+              ),
+              enableSorting: false,
+              enableHiding: false,
             },
             {
               accessorKey: "name",
               header: t("Action Name"),
               cell: ({ row }) => (
-                <Button variant="link" onClick={() => handleViewDetails(row.original)} className="p-0">
+                <Button
+                  variant="link"
+                  onClick={() => handleViewDetails(row.original)}
+                  className="p-0"
+                >
                   {row.getValue("name")}
                 </Button>
               ),
@@ -466,15 +522,24 @@ export function ActionManagement() {
                             {t("View Code")}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-[600px] max-h-[500px] overflow-y-auto" align="start">
+                        <PopoverContent
+                          className="w-[600px] max-h-[500px] overflow-y-auto"
+                          align="start"
+                        >
                           <div className="p-2">
-                            <h4 className="font-medium mb-2">{t("Python Code")}</h4>
-                            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono">{define}</pre>
+                            <h4 className="font-medium mb-2">
+                              {t("Python Code")}
+                            </h4>
+                            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto font-mono">
+                              {define}
+                            </pre>
                           </div>
                         </PopoverContent>
                       </Popover>
                     ) : (
-                      <span className="text-muted-foreground">{t("No definition")}</span>
+                      <span className="text-muted-foreground">
+                        {t("No definition")}
+                      </span>
                     )}
                   </div>
                 );
@@ -483,7 +548,8 @@ export function ActionManagement() {
             {
               accessorKey: "createdAt",
               header: t("Created At"),
-              cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleString(),
+              cell: ({ row }) =>
+                new Date(row.getValue("createdAt")).toLocaleString(),
             },
             {
               id: "actions",
@@ -493,17 +559,50 @@ export function ActionManagement() {
                 const isDeleted = action.deleted;
                 return (
                   <div className="flex gap-2">
-                    <Button onClick={() => handleViewDetails(action)} size="sm" variant="outline"><Eye className="h-4 w-4" /></Button>
+                    <Button
+                      onClick={() => handleViewDetails(action)}
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
                     {!isDeleted && (
-                      <Button onClick={() => handleEditAction(action)} size="sm" variant="outline"><Edit className="h-4 w-4 text-blue-600" /></Button>
+                      <Button
+                        onClick={() => handleEditAction(action)}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Edit className="h-4 w-4 text-blue-600" />
+                      </Button>
                     )}
                     {isDeleted ? (
                       <>
-                        <Button onClick={() => handleAskRestoreAction(action)} size="sm" variant="outline" title={t("Restore")}><RotateCcw className="h-4 w-4 text-green-600" /></Button>
-                        <Button onClick={() => handleAskDeleteAction(action)} size="sm" variant="destructive" title={t("Delete permanently")}><Trash2 className="h-4 w-4" /></Button>
+                        <Button
+                          onClick={() => handleAskRestoreAction(action)}
+                          size="sm"
+                          variant="outline"
+                          title={t("Restore")}
+                        >
+                          <RotateCcw className="h-4 w-4 text-green-600" />
+                        </Button>
+                        <Button
+                          onClick={() => handleAskDeleteAction(action)}
+                          size="sm"
+                          variant="destructive"
+                          title={t("Delete permanently")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </>
                     ) : (
-                      <Button onClick={() => handleAskDeleteAction(action)} size="sm" variant="outline" title={t("Move to trash")}><Archive className="h-4 w-4 text-orange-600" /></Button>
+                      <Button
+                        onClick={() => handleAskDeleteAction(action)}
+                        size="sm"
+                        variant="outline"
+                        title={t("Move to trash")}
+                      >
+                        <Archive className="h-4 w-4 text-orange-600" />
+                      </Button>
                     )}
                   </div>
                 );
@@ -524,7 +623,7 @@ export function ActionManagement() {
         onOpenChange={setCreateDialogOpen}
         onActionCreated={refreshActions}
       />
-      
+
       <UpdateActionDialog
         action={selectedAction}
         open={editDialogOpen}
@@ -548,7 +647,12 @@ export function ActionManagement() {
         onConfirm={handleConfirmRestore}
       />
 
-      <div className={cn("absolute bottom-24 right-1/2 translate-x-1/2 translate-y-1/2 hidden", Object.keys(rowSelection).length > 0 && "block")}>
+      <div
+        className={cn(
+          "absolute bottom-24 right-1/2 translate-x-1/2 translate-y-1/2 hidden",
+          Object.keys(rowSelection).length > 0 && "block"
+        )}
+      >
         <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-md">
           {Object.keys(rowSelection).length} {t("items selected")}
         </div>
