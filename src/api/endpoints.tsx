@@ -63,5 +63,14 @@ export default {
     SOFT_DELETE: (id: string) => `/api/v1/my-response/${id}/soft`,
     RESTORE: (id: string) => `/api/v1/my-response/${id}/restore`,
   },
+  RULE_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/rule",
+    GET_BY_ID: (id: string) => `/api/v1/rule/${id}`,
+    CREATE: "/api/v1/rule",
+    UPDATE: (id: string) => `/api/v1/rule/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/rule/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/rule/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/rule/${id}/restore`,
+  },
 
 } as const;
