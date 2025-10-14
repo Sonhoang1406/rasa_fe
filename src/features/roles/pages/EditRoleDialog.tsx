@@ -26,7 +26,6 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
 } from "@radix-ui/react-accordion";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -38,6 +37,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 import { UpdateRoleRequest } from "../api/dto/UpdateRoleRequest";
+import { AccordionTrigger } from "@/components/ui/accordion";
 
 interface EditRoleDialogProps {
   role: Role | null;
@@ -237,7 +237,7 @@ export default function EditRoleDialog({
             </div>
 
             <div className="mt-6">
-              <h3 className="text-lg font-medium mb-2">{t("Permissions")}:</h3>
+              <h3 className="text-lg font-medium mb-2">{t("Permissions")}</h3>
               <FormField
                 control={form.control}
                 name="permissions"
@@ -262,15 +262,18 @@ export default function EditRoleDialog({
                                   className="border-b last:border-b-0"
                                 >
                                   <AccordionTrigger className="px-4 py-3 hover:bg-muted/50">
-                                    <div className="flex items-center justify-between w-full pr-4">
-                                      <div className="font-medium ">
+                                    <div className="flex items-center justify-between w-full">
+                                      {/* Trái: Tên module */}
+                                      <div className="font-medium text-left">
                                         {t("Module")}: {module}
                                       </div>
+
+                                      {/* Phải: Số lượng + Switch */}
                                       <div
-                                        className="flex items-center gap-2"
+                                        className="flex items-center gap-3"
                                         onClick={(e) => e.stopPropagation()}
                                       >
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-xs text-muted-foreground w-10 text-right">
                                           {
                                             field.value.filter((id) =>
                                               perms.some((p) => p._id === id)
@@ -284,7 +287,6 @@ export default function EditRoleDialog({
                                           )}
                                           onCheckedChange={(checked) => {
                                             if (checked) {
-                                              // Add all permissions from this module that aren't already included
                                               const permIdsToAdd = perms
                                                 .filter(
                                                   (perm) =>
@@ -298,7 +300,6 @@ export default function EditRoleDialog({
                                                 ...permIdsToAdd,
                                               ]);
                                             } else {
-                                              // Remove all permissions from this module
                                               field.onChange(
                                                 field.value.filter(
                                                   (id) =>
@@ -313,6 +314,7 @@ export default function EditRoleDialog({
                                       </div>
                                     </div>
                                   </AccordionTrigger>
+
                                   <AccordionContent className="px-4 pb-3">
                                     <div className="space-y-2">
                                       {perms.map((perm) => (
