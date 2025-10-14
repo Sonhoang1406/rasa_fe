@@ -2,6 +2,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HomeDirectorPage, NotFoundPage, UserProfilePage } from "@/pages";
 import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 import { RoleManagement } from "@/features/roles";
 import { EntityManagement } from "@/features/entity";
@@ -73,6 +75,14 @@ const router = createBrowserRouter([
       {
         path: "verify",
         element: <VerifyPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage/>
       },
     ],
   },
