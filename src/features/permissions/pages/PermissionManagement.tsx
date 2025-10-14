@@ -104,7 +104,7 @@ export function PermissionManagement() {
       }).toString();
 
       const response: ListPermissionResponse = await fetchPermissions(
-        `?${query}`
+        `${query}`
       );
       if (response.success && Array.isArray(response.data)) {
         setPermissionsData(response.data);
