@@ -1,3 +1,11 @@
+
+export enum EUserStatus {
+  BANNED = 'BANNED',
+  ACTIVE = 'ACTIVE',
+  PENDING = 'PENDING',
+}
+
+
 export interface User {
   _id: string;
   email: string;
@@ -9,7 +17,16 @@ export interface User {
   phoneNumber: string;
   avatar: string;
   is2FAEnabled: boolean;
+  status?: EUserStatus;
   roles: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UserQuery {
+    page?: number;
+    limit?: number;
+    search?: string;
+    deleted?: boolean;
+    sort?: string;
 }
