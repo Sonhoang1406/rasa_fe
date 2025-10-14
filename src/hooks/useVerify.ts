@@ -5,11 +5,11 @@ export const useVerify = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const verify = async (otp: string) => {
+  const verify = async (otp: string, token: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.verify(otp);
+      const response = await authService.verify(otp, token);
       return response;
     } catch (err) {
       setError("Verification failed");
