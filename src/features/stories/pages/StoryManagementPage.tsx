@@ -38,21 +38,21 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
-import { IRule } from "@/interfaces/rule.interface";
-import { ruleService } from "../api/service";
-import { ListRuleResponse } from "../api/dto/RuleResponse";
+import { IStory } from "@/interfaces/story.interface";
+import { storyService } from "../api/service";
+import { ListStoryResponse } from "../api/dto/StoryDto";
 import {
   ConfirmSoftDeleteDialog,
   ConfirmHardDeleteDialog,
 } from "@/components/confirm-delete-dialog";
 import { ConfirmRestoreDialog } from "@/components/confirm-restore-dialog";
 import { Command } from "@/components/ui/command";
-import RuleDetailsDialog from "../components/RuleDetailsDialog";
+import StoryDetailsDialog from "../components/StoryDetailsDialog";
 
 const filterSchema = z.object({
   search: z.string().optional(),
@@ -60,24 +60,26 @@ const filterSchema = z.object({
   page: z.number().optional(),
   limit: z.number().optional(),
   sort: z.string().optional(),
+  createdBy: z.string().optional(),
+  updatedBy: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
 
-export function RuleManagementPage() {
+export function StoryManagementPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [rowSelection, setRowSelection] = useState({});
-  const [rulesData, setRulesData] = useState<IRule[]>([]);
+  const [storiesData, setStoriesData] = useState<IStory[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedRuleId, setSelectedRuleId] = useState<string | null>(null);
+  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
   const [confirmSoftDeleteOpen, setConfirmSoftDeleteOpen] = useState(false);
   const [confirmHardDeleteOpen, setConfirmHardDeleteOpen] = useState(false);
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
-  const [ruleToDelete, setRuleToDelete] = useState<IRule | null>(null);
-  const [ruleToRestore, setRuleToRestore] = useState<IRule | null>(null);
+  const [storyToDelete, setStoryToDelete] = useState<IStory | null>(null);
+  const [storyToRestore, setStoryToRestore] = useState<IStory | null>(null);
 
   const [pagination, setPagination] = useState({
     total: 0,
@@ -110,12 +112,12 @@ export function RuleManagementPage() {
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setDebouncedSearchValue(watchedValues.search || "");
-    }, 500); // 500ms debounce delay
+    }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [watchedValues.search]);
 
-  const fetchRulesData = async (filters?: z.infer<typeof filterSchema>) => {
+  const fetchStoriesData = async (filters?: z.infer<typeof filterSchema>) => {
     try {
       setIsDataLoading(true);
 
@@ -129,12 +131,12 @@ export function RuleManagementPage() {
         endDate: form.getValues("endDate"),
       };
 
-      const response: ListRuleResponse = await ruleService.fetchRules(
+      const response: ListStoryResponse = await storyService.fetchStories(
         queryParams
       );
 
       if (response.success && Array.isArray(response.data)) {
-        setRulesData(response.data);
+        setStoriesData(response.data);
         setPagination({
           total: response.meta.total,
           page: response.meta.page,
@@ -146,62 +148,19 @@ export function RuleManagementPage() {
       }
     } catch (err) {
       setError(
-        `Failed to fetch rules: ${
+        `Failed to fetch stories: ${
           err instanceof Error ? err.message : String(err)
         }`
       );
-      console.error("Error fetching rules:", err);
+      console.error("Error fetching stories:", err);
     } finally {
       setIsDataLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchRulesData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.page, pagination.limit]);
-
-  // Auto-filter when non-search form values change (immediate)
-  useEffect(() => {
-    if (watchedValues) {
-      const { page, search, ...otherFilters } = watchedValues;
-      // Reset to page 1 when filters change
-      setPagination((prev) => ({ ...prev, page: 1 }));
-      fetchRulesData({
-        page: 1,
-        limit: watchedValues.limit || pagination.limit,
-        search: debouncedSearchValue, // Use debounced search
-        ...otherFilters,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    watchedValues.deleted,
-    watchedValues.sort,
-    watchedValues.startDate,
-    watchedValues.endDate,
-    watchedValues.limit,
-  ]);
-
-  // Auto-filter when debounced search value changes
-  useEffect(() => {
-    if (watchedValues) {
-      const { page, search, ...otherFilters } = watchedValues;
-      // Reset to page 1 when search changes
-      setPagination((prev) => ({ ...prev, page: 1 }));
-      fetchRulesData({
-        page: 1,
-        limit: watchedValues.limit || pagination.limit,
-        search: debouncedSearchValue,
-        ...otherFilters,
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchValue]);
-
   const onSubmit = (data: z.infer<typeof filterSchema>) => {
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchRulesData({
+    fetchStoriesData({
       page: 1,
       limit: data.limit || pagination.limit,
       search: data.search,
@@ -213,7 +172,6 @@ export function RuleManagementPage() {
   };
 
   const handlePageChange = (page: number) => {
-    // Don't allow page changes when there are no results or invalid page
     if (
       pagination.totalPages === 0 ||
       page < 1 ||
@@ -224,76 +182,123 @@ export function RuleManagementPage() {
     setPagination((prev) => ({ ...prev, page }));
   };
 
-  const handleAskDeleteRule = (rule: IRule) => {
-    setRuleToDelete(rule);
-    if (rule.deleted) {
+  const handleAskDeleteStory = (story: IStory) => {
+    setStoryToDelete(story);
+    if (story.deleted) {
       setConfirmHardDeleteOpen(true);
     } else {
       setConfirmSoftDeleteOpen(true);
     }
   };
 
-  const handleCreateRule = () => {
-    navigate("/rules/new");
+  const handleCreateStory = () => {
+    navigate("new");
   };
 
-  const handleEditRule = (rule: IRule) => {
-    navigate("/rules/edit", { state: { rule } });
+  const handleEditStory = (story: IStory) => {
+    navigate("edit", { state: { story } });
   };
 
   const handleConfirmSoftDelete = async () => {
-    if (ruleToDelete) {
+    if (storyToDelete) {
       try {
-        await ruleService.softDeleteRule(ruleToDelete._id);
-        setRuleToDelete(null);
+        await storyService.softDeleteStory(storyToDelete._id);
+        setStoryToDelete(null);
         setConfirmSoftDeleteOpen(false);
-        fetchRulesData();
-      } catch (error) {
-        console.error("Error soft deleting rule:", error);
-      }
-    }
-  };
-
-  const handleConfirmHardDelete = async () => {
-    if (ruleToDelete) {
-      try {
-        await ruleService.hardDeleteRule(ruleToDelete._id);
-        setRuleToDelete(null);
-        setConfirmHardDeleteOpen(false);
-        fetchRulesData();
-      } catch (error) {
-        console.error("Error hard deleting rule:", error);
-      }
-    }
-  };
-
-  const handleAskRestoreRule = (rule: IRule) => {
-    setRuleToRestore(rule);
-    setConfirmRestoreOpen(true);
-  };
-
-  const handleConfirmRestore = async () => {
-    if (ruleToRestore) {
-      try {
-        await ruleService.restoreRule(ruleToRestore._id);
-        toast.success(t("Rule restored successfully"));
-        setRuleToRestore(null);
-        setConfirmRestoreOpen(false);
-        fetchRulesData();
+        fetchStoriesData();
+        toast.success(t("Story moved to trash"));
       } catch (error: any) {
-        console.error("Error restoring rule:", error);
+        console.error("Error soft deleting story:", error);
         toast.error(
-          t("Failed to restore rule") +
+          t("Failed to move story to trash") +
             `: ${error.response?.data?.message || error.message}`
         );
       }
     }
   };
 
-  const handleViewDetails = (rule: IRule) => {
-    setSelectedRuleId(rule._id);
+  const handleConfirmHardDelete = async () => {
+    if (storyToDelete) {
+      try {
+        await storyService.hardDeleteStory(storyToDelete._id);
+        setStoryToDelete(null);
+        setConfirmHardDeleteOpen(false);
+        fetchStoriesData();
+        toast.success(t("Story permanently deleted"));
+      } catch (error: any) {
+        console.error("Error hard deleting story:", error);
+        toast.error(
+          t("Failed to delete story") +
+            `: ${error.response?.data?.message || error.message}`
+        );
+      }
+    }
+  };
+
+  const handleAskRestoreStory = (story: IStory) => {
+    setStoryToRestore(story);
+    setConfirmRestoreOpen(true);
+  };
+
+  const handleConfirmRestore = async () => {
+    if (storyToRestore) {
+      try {
+        await storyService.restoreStory(storyToRestore._id);
+        toast.success(t("Story restored successfully"));
+        setStoryToRestore(null);
+        setConfirmRestoreOpen(false);
+        fetchStoriesData();
+      } catch (error: any) {
+        console.error("Error restoring story:", error);
+        toast.error(
+          t("Failed to restore story") +
+            `: ${error.response?.data?.message || error.message}`
+        );
+      }
+    }
+  };
+
+  const handleViewDetails = (story: IStory) => {
+    setSelectedStoryId(story._id);
     setDetailsDialogOpen(true);
   };
+
+  // Effects for data fetching and filtering
+  useEffect(() => {
+    fetchStoriesData();
+  }, [pagination.page, pagination.limit]);
+
+  useEffect(() => {
+    if (watchedValues) {
+      const { page, search, ...otherFilters } = watchedValues;
+      setPagination((prev) => ({ ...prev, page: 1 }));
+      fetchStoriesData({
+        page: 1,
+        limit: watchedValues.limit || pagination.limit,
+        search: debouncedSearchValue,
+        ...otherFilters,
+      });
+    }
+  }, [
+    watchedValues.deleted,
+    watchedValues.sort,
+    watchedValues.startDate,
+    watchedValues.endDate,
+    watchedValues.limit,
+  ]);
+
+  useEffect(() => {
+    if (watchedValues) {
+      const { page, search, ...otherFilters } = watchedValues;
+      setPagination((prev) => ({ ...prev, page: 1 }));
+      fetchStoriesData({
+        page: 1,
+        limit: watchedValues.limit || pagination.limit,
+        search: debouncedSearchValue,
+        ...otherFilters,
+      });
+    }
+  }, [debouncedSearchValue]);
 
   const sortOptions = [
     { value: "ASC", label: t("Oldest") },
@@ -367,11 +372,11 @@ export function RuleManagementPage() {
       accessorKey: "action",
       header: t("Actions"),
       cell: ({ row }: any) => {
-        const actions = row.getValue("action") as any[];
+        const action = row.getValue("action") as any[];
         return (
           <div className="text-sm">
-            {actions && actions.length > 0
-              ? `${actions.length} ${t("actions")}`
+            {action && action.length > 0
+              ? `${action.length} ${t("actions")}`
               : t("No actions")}
           </div>
         );
@@ -398,39 +403,41 @@ export function RuleManagementPage() {
       header: t("Created At"),
       cell: ({ row }: any) => (
         <div className="text-sm">
-          {new Date(row.getValue("createdAt")).toLocaleDateString()}
+          {row.getValue("createdAt")
+            ? new Date(row.getValue("createdAt")).toLocaleDateString()
+            : "-"}
         </div>
       ),
     },
     {
-      id: "actions_column",
+      id: "actions",
       header: t("Operations"),
       cell: ({ row }: any) => {
-        const rule = row.original as IRule;
+        const story = row.original as IStory;
         return (
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               className="bg-green-600 hover:bg-green-700"
-              onClick={() => handleViewDetails(rule)}
+              onClick={() => handleViewDetails(story)}
               title={t("View details")}
             >
               <Eye className="h-4 w-4" />
             </Button>
-            {!rule.deleted && (
+            {!story.deleted && (
               <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => handleEditRule(rule)}
+                onClick={() => handleEditStory(story)}
               >
                 <Edit className="h-4 w-4" />
               </Button>
             )}
-            {rule.deleted ? (
+            {story.deleted ? (
               <Button
                 size="sm"
                 className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleAskRestoreRule(rule)}
+                onClick={() => handleAskRestoreStory(story)}
                 title={t("Restore from trash")}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -439,17 +446,17 @@ export function RuleManagementPage() {
               <Button
                 size="sm"
                 className="bg-orange-600 hover:bg-orange-700"
-                onClick={() => handleAskDeleteRule(rule)}
+                onClick={() => handleAskDeleteStory(story)}
                 title={t("Move to trash")}
               >
                 <Archive className="h-4 w-4" />
               </Button>
             )}
-            {rule.deleted && (
+            {story.deleted && (
               <Button
                 size="sm"
                 className="bg-red-700 hover:bg-red-800"
-                onClick={() => handleAskDeleteRule(rule)}
+                onClick={() => handleAskDeleteStory(story)}
                 title={t("Delete permanently")}
               >
                 <Trash2 className="h-4 w-4" />
@@ -482,7 +489,7 @@ export function RuleManagementPage() {
                       <Input
                         id="search"
                         type="search"
-                        placeholder={t("Search rules")}
+                        placeholder={t("Search stories")}
                         className="w-full rounded-lg bg-background pl-8"
                         {...field}
                       />
@@ -506,7 +513,7 @@ export function RuleManagementPage() {
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader>
-                  <DrawerTitle>{t("Filter Rules")}</DrawerTitle>
+                  <DrawerTitle>{t("Filter Stories")}</DrawerTitle>
                 </DrawerHeader>
                 <div className="grid gap-4 p-4">
                   <FormField
@@ -517,15 +524,15 @@ export function RuleManagementPage() {
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id="rule-filter-deleted"
+                              id="story-filter-deleted"
                               checked={field.value}
                               onCheckedChange={field.onChange}
                             />
                             <label
-                              htmlFor="rule-filter-deleted"
+                              htmlFor="story-filter-deleted"
                               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                             >
-                              {t("Show deleted rules")}
+                              {t("Show deleted stories")}
                             </label>
                           </div>
                         </FormControl>
@@ -694,7 +701,7 @@ export function RuleManagementPage() {
                               </PopoverContent>
                             </Popover>
                             <span className="text-sm font-medium leading-none">
-                              {t("rules / page")}
+                              {t("stories / page")}
                             </span>
                           </FormItem>
                         </FormControl>
@@ -713,12 +720,12 @@ export function RuleManagementPage() {
 
           <div className="flex-1"></div>
           <Button
-            onClick={handleCreateRule}
+            onClick={handleCreateStory}
             variant="default"
             className="bg-green-600 hover:bg-green-700"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {t("Create Rule")}
+            {t("Create Story")}
           </Button>
         </form>
       </Form>
@@ -726,7 +733,7 @@ export function RuleManagementPage() {
       {error && <div className="text-red-600 text-center py-4">{error}</div>}
 
       <DataTable
-        data={rulesData}
+        data={storiesData}
         columns={columns}
         rowSelection={rowSelection}
         setRowSelection={setRowSelection}
@@ -741,8 +748,8 @@ export function RuleManagementPage() {
       />
 
       {/* Dialogs */}
-      <RuleDetailsDialog
-        ruleId={selectedRuleId}
+      <StoryDetailsDialog
+        storyId={selectedStoryId}
         open={detailsDialogOpen}
         onOpenChange={setDetailsDialogOpen}
       />

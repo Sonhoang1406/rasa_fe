@@ -22,6 +22,9 @@ import {
 import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
 import { UserManagement } from "@/features/users/pages/UserManagement";
+import { StoryManagementPage } from "@/features/stories/pages/StoryManagementPage";
+import { EditStoryPage } from "@/features/stories/pages/EditStoryPage";
+import { CreateStoryPage } from "@/features/stories/pages/CreateStoryPage";
 
 const router = createBrowserRouter([
   {
@@ -58,6 +61,14 @@ const router = createBrowserRouter([
       },
       { path: "responses", element: <ResponseManagement /> },
       { path: "actions", element: <ActionManagement /> },
+      {
+        path: "stories",
+        children: [
+          { index: true, element: <StoryManagementPage /> },
+          { path: "new", element: <CreateStoryPage /> },
+          { path: "edit", element: <EditStoryPage /> },
+        ],
+      },
     ],
   },
   {
@@ -82,7 +93,7 @@ const router = createBrowserRouter([
       },
       {
         path: "reset-password",
-        element: <ResetPasswordPage/>
+        element: <ResetPasswordPage />,
       },
     ],
   },

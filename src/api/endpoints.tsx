@@ -14,7 +14,7 @@ export default {
     PROFILE: "/api/v1/user/profile",
     GET_ALL_USERS: "/api/v1/user",
     BAN_USER: (id: string) => `/api/v1/user/${id}/ban`,
-    UNBAN_USER: (id: string) => `/api/v1/user/${id}/unban`
+    UNBAN_USER: (id: string) => `/api/v1/user/${id}/unban`,
   },
   ROLE_ENDPOINTS: {
     GET_ALL: "/api/v1/role/all",
@@ -77,4 +77,33 @@ export default {
     RESTORE: (id: string) => `/api/v1/rule/${id}/restore`,
   },
 
+  STORY_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/story",
+    GET_BY_ID: (id: string) => `/api/v1/story/${id}`,
+    CREATE: "/api/v1/story",
+    UPDATE: (id: string) => `/api/v1/story/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/story/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/story/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/story/${id}/restore`,
+  },
+
+  SLOT_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/slot",
+    GET_BY_ID: (id: string) => `/api/v1/slot/${id}`,
+    CREATE: "/api/v1/slot",
+    UPDATE: (id: string) => `/api/v1/slot/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/slot/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/slot/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/slot/${id}/restore`,
+  },
+
+  UQUESTION_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/unanswered-question",
+    GET_BY_ID: (id: string) => `/api/v1/unanswered-question/${id}`,
+    CREATE: "/api/v1/unanswered-question",
+    UPDATE: (id: string) => `/api/v1/unanswered-question/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/unanswered-question/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/unanswered-question/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/unanswered-question/${id}/restore`,
+  },
 } as const;
