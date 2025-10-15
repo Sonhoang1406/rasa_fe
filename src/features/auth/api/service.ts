@@ -10,6 +10,8 @@ import { ForgotPasswordRequest } from "./dto/ForgotPasswordRequest";
 import { ForgotPasswordResponse } from "./dto/ForgotPasswordResponse";
 import { ResetPasswordRequest } from "./dto/ResetPasswordRequest";
 import { ResetPasswordResponse } from "./dto/ResetPasswordResponse";
+import { UpdatePasswordRequest } from "./dto/UpdatePasswordRequest";
+import { UpdatePasswordResponse } from "./dto/UpdatePasswordResponse";
 
 export const authService = {
   login: async (data: LoginRequest): Promise<LoginResponse> => {
@@ -42,6 +44,20 @@ export const authService = {
   },
   updateMe: async (data: UpdateMeRequest): Promise<IUser> => {
     const response = await axiosInstance.put(ENDPOINTS.AUTH_ENDPOINTS.UPDATE_ME, data);
+    return response.data.data;
+  },
+  updatePassword: async (data: UpdatePasswordRequest): Promise<UpdatePasswordResponse> => {
+    const response = await axiosInstance.put(ENDPOINTS.AUTH_ENDPOINTS.UPDATE_PASSWORD, data);
+    return response.data;
+  },
+  updateAvatar: async (file: File): Promise<IUser> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await axiosInstance.put(ENDPOINTS.AUTH_ENDPOINTS.UPDATE_AVATAR, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   }
 }

@@ -57,7 +57,7 @@ export const UserProfilePage = () => {
   const setUser = useAuthStore((state) => state.updateUser);
   const user = useAuthStore((state) => state.user);
 
-  const { getMe, updateMe } = useMe();
+  const { getMe, updateMe, updatePassword, updateAvatar } = useMe();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -95,6 +95,7 @@ export const UserProfilePage = () => {
         setUser(userProfile);
         reset({
           firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
           phoneNumber: userProfile.phoneNumber,
           gender: userProfile.gender,
           dateOfBirth: userProfile.dateOfBirth.substring(0, 10),
@@ -113,7 +114,6 @@ export const UserProfilePage = () => {
       const updatedUser = await updateMe(data);
       if (!updatedUser) return;
       setUser(updatedUser);
-      toast.success("Cập nhật thông tin thành công!");
       setIsEditing(false);
       window.location.reload();
     } catch (error) {
@@ -193,25 +193,36 @@ export const UserProfilePage = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="bg-card text-card-foreground rounded-xl shadow p-6 grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300 dark:bg-gray-800 dark:text-white"
       >
-        <div>
-          <label className="text-sm md:text-base font-medium">Full Name</label>
+
+        <div className="md:col-span-2">
+          <label className="text-sm md:text-base font-medium">Họ và tên</label>
           {isEditing ? (
-            <Input
-              {...register("firstName")} // name="firstName"
-              placeholder="Your First Name"
-              className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
-            />
+            <div className="flex gap-2">
+              <Input
+                {...register("lastName")}
+                placeholder="Nhập họ"
+                className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
+              />
+              <Input
+                {...register("firstName")}
+                placeholder="Nhập tên"
+                className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
+              />
+            </div>
           ) : (
-            <p className="mt-1">{user.firstName + " " + user.lastName}</p>
+            <p className="mt-1">{user.lastName + " " + user.firstName}</p>
           )}
-          {errors.firstName && (
-            <p className="text-red-500 text-sm">{errors.firstName.message}</p>
+          {(errors.lastName || errors.firstName) && (
+            <p className="text-red-500 text-sm">
+              {errors.lastName?.message || ""}
+              {errors.firstName?.message ? `, ${errors.firstName.message}` : ""}
+            </p>
           )}
         </div>
 
         <div>
           <label className="text-sm md:text-base font-medium">
-            Date of Birth
+            Ngày sinh
           </label>
           {isEditing ? (
             <Popover>
@@ -265,7 +276,7 @@ export const UserProfilePage = () => {
         </div>
 
         <div>
-          <label className="text-sm md:text-base font-medium">Gender</label>
+          <label className="text-sm md:text-base font-medium">Giới tính</label>
           {isEditing ? (
             <Select
               onValueChange={(val) =>
@@ -287,7 +298,7 @@ export const UserProfilePage = () => {
         </div>
 
         <div>
-          <label className="text-sm md:text-base font-medium">Address</label>
+          <label className="text-sm md:text-base font-medium">Địa chỉ</label>
           {isEditing ? (
             <Input
               {...register("address")}
@@ -300,7 +311,7 @@ export const UserProfilePage = () => {
         </div>
 
         <div>
-          <label className="text-sm md:text-base font-medium">Phone</label>
+          <label className="text-sm md:text-base font-medium">Số điện thoại</label>
           {isEditing ? (
             <Input
               {...register("phoneNumber")}
@@ -327,16 +338,25 @@ export const UserProfilePage = () => {
       </form>
 
       <div className="bg-white rounded-xl shadow p-6 grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300 dark:bg-gray-800 dark:text-white">
-        <p className="text-sm md:text-base font-medium">Change Password</p>
+        <p className="text-sm md:text-base font-medium">Bảo mật và thông tin khác</p>
         <div className="col-span-4 flex justify-start items-center gap-4">
           <Button onClick={() => setOpenPasswordDialog(true)}>
-            Change Password
+            Đổi mật khẩu
           </Button>
         </div>
       </div>
 
       {/* Dialog Change Password */}
-      <Dialog open={openPasswordDialog} onOpenChange={setOpenPasswordDialog}>
+      <Dialog open={openPasswordDialog} onOpenChange={(open) => {
+        setOpenPasswordDialog(open);
+        if (!open) {
+          // Reset khi đóng dialog
+          setOldPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+          setPasswordError("");
+        }
+      }}>
         <DialogContent className="bg-card text-card-foreground">
           <DialogHeader>
             <DialogTitle>Đổi mật khẩu</DialogTitle>
@@ -411,39 +431,43 @@ export const UserProfilePage = () => {
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setOpenPasswordDialog(false)}
+              onClick={() => {
+                setOpenPasswordDialog(false);
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setPasswordError("");
+              }}
             >
               Hủy
             </Button>
             <Button
-            // onClick={async () => {
-            //   setPasswordError("");
-            //   if (!oldPassword || !newPassword || !confirmPassword) {
-            //     setPasswordError("Vui lòng nhập đầy đủ thông tin");
-            //     return;
-            //   }
-            //   if (newPassword !== confirmPassword) {
-            //     setPasswordError("Mật khẩu mới và nhập lại không khớp");
-            //     return;
-            //   }
+              onClick={async () => {
+                setPasswordError("");
+                if (!oldPassword || !newPassword || !confirmPassword) {
+                  setPasswordError("Vui lòng nhập đầy đủ thông tin");
+                  return;
+                }
+                if (newPassword !== confirmPassword) {
+                  setPasswordError("Mật khẩu mới và nhập lại không khớp");
+                  return;
+                }
 
-            //   try {
-            //     await updatePassword({
-            //       oldPassword,
-            //       newPassword,
-            //       newPasswordConfirm: confirmPassword,
-            //     });
-            //     toast.success("Đổi mật khẩu thành công!");
-            //     setOpenPasswordDialog(false);
-            //     setOldPassword("");
-            //     setNewPassword("");
-            //     setConfirmPassword("");
-            //   } catch (err) {
-            //     setPasswordError(
-            //       "Đổi mật khẩu không thành công, thử lại sau"
-            //     );
-            //   }
-            // }}
+                try {
+                  await updatePassword({
+                    oldPassword,
+                    newPassword,
+                  });
+                  setOpenPasswordDialog(false);
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                } catch (err) {
+                  setPasswordError(
+                    err instanceof Error ? err.message : "Đổi mật khẩu không thành công, thử lại sau"
+                  );
+                }
+              }}
             >
               Lưu
             </Button>
@@ -478,24 +502,29 @@ export const UserProfilePage = () => {
           <DialogFooter className="mt-4 flex justify-end gap-2">
             <Button
               variant="outline"
-              onClick={() => setOpenAvatarDialog(false)}
+              onClick={() => {
+                setOpenAvatarDialog(false);
+                setSelectedFile(null);
+              }}
             >
               Hủy
             </Button>
             <Button
-            // onClick={async () => {
-            //   if (!selectedFile) return;
-            //   try {
-            //     const userUpdated = await updateAvatar(selectedFile);
-            //     toast.success("Cập nhật avatar thành công!");
-            //     if (!userUpdated) return;
-            //     setUser(userUpdated);
-            //     setSelectedFile(null);
-            //     setOpenAvatarDialog(false);
-            //   } catch (err) {
-            //     console.error("Lỗi khi cập nhật avatar:", err);
-            //   }
-            // }}
+              onClick={async () => {
+                if (!selectedFile) {
+                  toast.error("Vui lòng chọn ảnh!");
+                  return;
+                }
+                try {
+                  const userUpdated = await updateAvatar(selectedFile);
+                  if (!userUpdated) return;
+                  setUser(userUpdated);
+                  setSelectedFile(null);
+                  setOpenAvatarDialog(false);
+                } catch (err) {
+                  console.error("Lỗi khi cập nhật avatar:", err);
+                }
+              }}
             >
               Lưu ảnh
             </Button>

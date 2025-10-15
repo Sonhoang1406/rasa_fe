@@ -1,5 +1,6 @@
 
 import { UpdateMeRequest } from "@/features/auth/api/dto/UpdateMeRequest";
+import { UpdatePasswordRequest } from "@/features/auth/api/dto/UpdatePasswordRequest";
 import { authService } from "@/features/auth/api/service";
 import { useAuthStore } from "@/store/auth";
 import { useState } from "react";
@@ -39,7 +40,7 @@ export const useMe = () => {
         setIsLoading(true);
         try {
             const response = await authService.updateMe(data);
-            toast.success("User profile updated successfully");
+            toast.success("Cập nhập thông tin thành công");
             updateUser(response);
             return response;
         } catch (err: any) {
@@ -53,7 +54,39 @@ export const useMe = () => {
         }
     };
 
-    return { isLoading, error, user, getMe, updateMe };
+    const updatePassword = async (data: UpdatePasswordRequest) => {
+        setIsLoading(true);
+        try {
+            const response = await authService.updatePassword(data);
+            toast.success("Đổi mật khẩu thành công!");
+            return response;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || "Đổi mật khẩu thất bại!";
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const updateAvatar = async (file: File) => {
+        setIsLoading(true);
+        try {
+            const response = await authService.updateAvatar(file);
+            toast.success("Cập nhật ảnh đại diện thành công!");
+            updateUser(response);
+            return response;
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || "Cập nhật ảnh đại diện thất bại!";
+            setError(errorMessage);
+            toast.error(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return { isLoading, error, user, getMe, updateMe, updatePassword, updateAvatar };
 }
 
 

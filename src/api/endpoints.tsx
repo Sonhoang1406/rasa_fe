@@ -6,9 +6,11 @@ export default {
     REGISTER: "/api/v1/auth/register",
     VERIFY: "/api/v1/auth/verify-email",
     FORGOT_PASSWORD: "/api/v1/auth/forgot-password",
-    RESET_PASSWORD: "api/v1/auth/reset-password",
+    RESET_PASSWORD: "/api/v1/auth/reset-password",
     ME: "/api/v1/auth/me",
     UPDATE_ME: "/api/v1/auth/me",
+    UPDATE_PASSWORD: "/api/v1/auth/me/password",
+    UPDATE_AVATAR: "/api/v1/auth/me/avatar",
   },
   USER_ENDPOINTS: {
     PROFILE: "/api/v1/user/profile",
