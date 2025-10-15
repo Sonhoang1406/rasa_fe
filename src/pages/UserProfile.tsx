@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useForgotPassword } from "@/hooks/useForgotPassword";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -56,6 +57,7 @@ export const UserProfilePage = () => {
   //   const setUser = useUserStore((state) => state.setUser);
   const setUser = useAuthStore((state) => state.updateUser);
   const user = useAuthStore((state) => state.user);
+  const { forgotPassword, loading, error, success } = useForgotPassword();
 
   const { getMe, updateMe, updatePassword, updateAvatar } = useMe();
 
@@ -193,30 +195,35 @@ export const UserProfilePage = () => {
         onSubmit={handleSubmit(onSubmit)}
         className="bg-card text-card-foreground rounded-xl shadow p-6 grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-300 dark:bg-gray-800 dark:text-white"
       >
-
-        <div className="md:col-span-2">
-          <label className="text-sm md:text-base font-medium">Họ và tên</label>
+        <div>
+          <label className="text-sm md:text-base font-medium">Họ</label>
           {isEditing ? (
-            <div className="flex gap-2">
-              <Input
-                {...register("lastName")}
-                placeholder="Nhập họ"
-                className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
-              />
-              <Input
-                {...register("firstName")}
-                placeholder="Nhập tên"
-                className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
-              />
-            </div>
+            <Input
+              {...register("firstName")}
+              placeholder="Nhập họ"
+              className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
+            />
           ) : (
-            <p className="mt-1">{user.lastName + " " + user.firstName}</p>
+            <p className="mt-1">{user.firstName}</p>
           )}
-          {(errors.lastName || errors.firstName) && (
-            <p className="text-red-500 text-sm">
-              {errors.lastName?.message || ""}
-              {errors.firstName?.message ? `, ${errors.firstName.message}` : ""}
-            </p>
+          {errors.firstName && (
+            <p className="text-red-500 text-sm">{errors.firstName.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="text-sm md:text-base font-medium">Tên</label>
+          {isEditing ? (
+            <Input
+              {...register("lastName")}
+              placeholder="Nhập tên"
+              className="text-sm mt-1 md:text-base dark:bg-gray-700 dark:text-white"
+            />
+          ) : (
+            <p className="mt-1">{user.lastName}</p>
+          )}
+          {errors.lastName && (
+            <p className="text-red-500 text-sm">{errors.lastName.message}</p>
           )}
         </div>
 
@@ -415,6 +422,34 @@ export const UserProfilePage = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="bg-background text-foreground"
               />
+              {/* <button
+                type="button"
+                className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mt-1 text-left"
+                onClick={async () => {
+                  try {
+                    const email = user?.email;
+                    if (!email) {
+                      toast.error("Không tìm thấy email người dùng!");
+                      return;
+                    }
+                    const res = await forgotPassword({ email });
+                    toast.success("OTP đã được gửi! Vui lòng kiểm tra email.");
+                    navigate("/auth/verify", {
+                      state: { email, token: res.accessToken, type: "forgot" },
+                    });
+
+                    // Sau khi navigate xong mới đóng dialog
+                    setTimeout(() => setOpenPasswordDialog(false), 200);
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Gửi OTP thất bại, vui lòng thử lại!");
+                  }
+                }}
+
+              >
+                Quên mật khẩu?
+              </button> */}
+
               <div
                 className="absolute right-3 top-9 cursor-pointer"
                 onClick={() => setShowConfirmPass(!showConfirmPass)}
