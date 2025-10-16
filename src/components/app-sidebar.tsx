@@ -1,18 +1,6 @@
-import * as React from "react";
-import {
-  BookOpen,
-  Bot,
-  MessageCircleCode,
-  Settings2,
-  ShieldCheck,
-  UserCog,
-} from "lucide-react";
-import "@fontsource/orbitron/400.css"; // Regular weight
-import "@fontsource/audiowide/400.css"; // Import Audiowide
-
-import { NavMain } from "@/components/nav-main";
-// import { NavConversations } from "@/components/nav-conversations";
-import { NavUser } from "@/components/nav-user";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -23,30 +11,29 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar";
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { UserResponse, useUserStore } from "@/store/user-store";
-import { useNavigate } from "react-router-dom";
+} from "./ui/sidebar";
+import { Bot, MessageCircleCode, ShieldCheck, UserCog } from "lucide-react";
+import { NavMain } from "./nav-main";
+import { NavUser } from "./nav-user";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation();
-  const user = useUserStore((state) => state.user);
+  //   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
 
-  const infoUser = {
-    name: user?.name || "",
-    email: user?.email || "",
-    avatar: user?.avatar || "",
-  };
+  //   const infoUser = {
+  //     name: user?.name || "",
+  //     email: user?.email || "",
+  //     avatar: user?.avatar || "",
+  //   };
 
   const data = React.useMemo(() => {
     return {
-      user: {
-        name: infoUser.name,
-        email: infoUser.email,
-        avatar: infoUser.avatar,
-      },
+      //   user: {
+      //     name: infoUser.name,
+      //     email: infoUser.email,
+      //     avatar: infoUser.avatar,
+      //   },
 
       navMain: [
         {
@@ -55,10 +42,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: Bot,
           hidden: false,
           items: [
-            {
-              title: "Training",
-              url: "/training",
-            },
+            // {
+            //   title: "Training",
+            //   url: "/training",
+            // },
             {
               title: "Intents",
               url: "/intents",
@@ -68,25 +55,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               url: "/entities",
             },
             {
-              title: "Stories",
-              url: "/stories",
-            },
-            // {
-            //   title: "Rules",
-            //   url: "/rules",
-            // },
-            // {
-            //   title: "Responses",
-            //   url: "/responses",
-            // },
-            {
-              title: "Slots",
-              url: "/slots",
+              title: "Actions",
+              url: "/actions",
             },
             {
-              title: "Rule",
-              url: "/rule",
+              title: "Responses",
+              url: "/responses",
             },
+            {
+              title: "Rules",
+              url: "/rules",
+            },
+            { title: "Stories", url: "/stories" },
+            // {
+            //   title: "Slots",
+            //   url: "/slots",
+            // },
             {
               title: "Chat Bot",
               url: "/chat_bot",
@@ -94,10 +78,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             {
               title: "UQuestion",
               url: "/uquestion",
-            },
-            {
-              title: "Actions",
-              url: "/actions",
             },
           ],
         },
@@ -132,11 +112,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: [
             {
               title: t("Roles"),
-              url: "role",
+              url: "roles",
             },
             {
               title: t("Permissions"),
-              url: "permission",
+              url: "permissions",
             },
           ],
         },
@@ -160,11 +140,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ],
     };
   }, [t]);
+  console.log("Sidebar data:", data.navMain);
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader
         onClick={() => {
-          navigate("/");
+          navigate("/home_chat");
         }}
         className="px-4 flex items-center py-3 cursor-pointer"
       >

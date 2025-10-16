@@ -1,16 +1,23 @@
-import { authService } from "@/lib/api/services"
-import type { VerifyRequest } from "@/lib/types/auth-type"
-import { useNavigate } from "react-router-dom"
+import { authService } from "@/features/auth/api/service";
+import { useState } from "react";
 
 export const useVerify = () => {
-    const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-    const verify = async (data: VerifyRequest) => {
-        const response = await authService.verify(data)
-        navigate("/auth")
-       return response
+  const verify = async (otp: string, token: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await authService.verify(otp, token);
+      return response;
+    } catch (err) {
+      setError("Verification failed");
+      console.error("Verification error:", err);
+    } finally {
+      setIsLoading(false);
     }
-    return {
-        verify
-    }
-}
+  };
+
+  return { verify, isLoading, error };
+};

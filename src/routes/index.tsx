@@ -1,75 +1,113 @@
-import { Register } from "@/pages/Resiger";
-import { ForgotPassword } from "@/pages/Forgot-password";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { HomeDirectorPage, NotFoundPage, UserProfilePage } from "@/pages";
 import { AuthLayout, MainLayout } from "@/layouts";
-import { Error, Login, NotFound } from "@/pages";
-import { RouterProvider, createBrowserRouter } from "react-router-dom";
-import { VerifyFormPage } from "@/pages/VerifyForm";
-import { HomeChatPage } from "@/pages/HomeChat";
-import { ResetPassword } from "@/pages/Reset-Password";
-import { UserManagement } from "@/components";
-import { IntentManagement } from "@/pages/Intent/IntentManagement";
-import { EntitiesManagement } from "@/pages/Entity";
-import { UserProfile } from "@/pages/UserProfile";
-import { ModelManagement } from "@/pages/Training/ModelManagement";
-import { ActionManagement } from "@/pages/Action/ActionManagement";
-import { SlotManagement } from "@/pages/Slot";
-import { ResponseManagement } from "@/pages/Response";
-import { StoriesManagement } from "@/pages/Story";
-import { ChatBotManagement } from "@/pages/ChatBot/ChatbotManagement";
-import { RuleManagement } from "@/pages/Rule/RuleManagement";
-import { PermissionManagement } from "@/pages/Permission/PermissionManagement";
-import { RoleManagement } from "@/pages/Role";
-import { UQuestionManagement } from "@/pages/UQuestion/UQuestionManagement";
-import { PublicChat } from "@/components/publicChat";
-import { HomeRedirect } from "@/components/HomeRedirect";
+import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
+import { HomeChat } from "@/features/chat/pages/HomeChatPage";
+import { RoleManagement } from "@/features/roles";
+import { EntityManagement } from "@/features/entity";
+import {
+  CreateIntentPage,
+  EditIntentPage,
+  IntentManagementPage,
+} from "@/features/intents";
+import { ResponseManagement } from "@/features/reponses";
+import { ActionManagement } from "@/features/action";
+import {
+  CreateRulePageSimple,
+  EditRulePageNew,
+  RuleManagementPage,
+} from "@/features/rules";
+import { ChatBotManagement } from "@/features/chatbot";
+import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
+import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
+import { UserManagement } from "@/features/users/pages/UserManagement";
+import { UQuestionManagement } from "@/features/uquestion/pages/UQuestionManagement";
+import { StoryManagementPage } from "@/features/stories/pages/StoryManagementPage";
+import { EditStoryPage } from "@/features/stories/pages/EditStoryPage";
+import { CreateStoryPage } from "@/features/stories/pages/CreateStoryPage";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomeRedirect />,
-  },
-  {
-    path: "/",
     element: <MainLayout />,
-    errorElement: <Error />,
+    errorElement: <NotFoundPage />,
     children: [
-
-      { path: "home_chat", index: true, element: <HomeChatPage /> },
-      { path: "role", element: <RoleManagement /> },
-      { path: "intents", element: <IntentManagement /> },
-      { path: "training", element: <ModelManagement /> },
-      { path: "actions", element: <ActionManagement /> },
-      { path: "slots", element: <SlotManagement /> },
-      { path: "stories", element: <StoriesManagement /> },
+      { index: true, element: <HomeDirectorPage /> },
+      { path: "home_chat", element: <HomeChatDemo /> },
+      // { path: "home_chat", element: <HomeChat /> },
       { path: "users", element: <UserManagement /> },
-      { path: "entities", element: <EntitiesManagement /> },
+      { path: "profile", element: <UserProfilePage /> },
+      { path: "roles", element: <RoleManagement /> },
+      { path: "permissions", element: <PermissionManagement /> },
+      { path: "entities", element: <EntityManagement /> },
+      { path: "users", element: <UserManagement /> },
+      {
+        path: "intents",
+        children: [
+          { index: true, element: <IntentManagementPage /> },
+          { path: "new", element: <CreateIntentPage /> },
+          { path: "edit", element: <EditIntentPage /> },
+        ],
+      },
+      { path: "actions", element: <ActionManagement /> },
       { path: "responses", element: <ResponseManagement /> },
+      {
+        path: "rules",
+        children: [
+          { index: true, element: <RuleManagementPage /> },
+          { path: "new", element: <CreateRulePageSimple /> },
+          { path: "edit", element: <EditRulePageNew /> },
+        ],
+      },
+      { path: "responses", element: <ResponseManagement /> },
+      { path: "actions", element: <ActionManagement /> },
       { path: "chat_bot", element: <ChatBotManagement /> },
-      { path: "rule", element: <RuleManagement /> },
-      { path: "permission", element: <PermissionManagement /> },
       { path: "uquestion", element: <UQuestionManagement /> },
+      {
+        path: "stories",
+        children: [
+          { index: true, element: <StoryManagementPage /> },
+          { path: "new", element: <CreateStoryPage /> },
+          { path: "edit", element: <EditStoryPage /> },
+        ],
+      },
     ],
   },
   {
     path: "/auth",
     element: <AuthLayout />,
     children: [
-      { path: "", index: true, element: <Login /> },
-      { path: "register", element: <Register /> },
-      { path: "forgot-password", element: <ForgotPassword /> },
-      { path: "verify", element: <VerifyFormPage /> },
-      { path: "reset-password", element: <ResetPassword /> },
+      {
+        index: true,
+        element: <LoginPage />,
+      },
+      {
+        path: "register",
+        element: <SignUpPage />,
+      },
+      {
+        path: "verify",
+        element: <VerifyPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage />,
+      },
     ],
   },
-  {
-    path: "user-profile",
-    element: <UserProfile />,
-  },
-  {
-    path: "/public_chat",
-    element: <PublicChat />,
-  },
-  { path: "*", element: <NotFound /> },
+  // {
+  //   path: "/",
+  //   element: <MainLayout />,
+  //   errorElement: <NotFoundPage />,
+  //   children: [{ path: "home_chat", index: true, element: <HomeChat /> }],
+  // },
+  { path: "*", element: <NotFoundPage /> },
 ]);
 
 export default function AppRouter() {

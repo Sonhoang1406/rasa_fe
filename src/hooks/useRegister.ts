@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
+import { RegisterRequest } from "@/features/auth/api/dto/RegisterRequest";
 import { authService } from "@/features/auth/api/service";
-import type { RegisterRequest } from "../lib/types/auth-type";
+import { useState } from "react";
 
 export const useRegister = () => {
   const [isLoading, setIsLoading] = useState(false);

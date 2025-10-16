@@ -2,14 +2,14 @@ import { motion } from "framer-motion";
 import {
   Pagination,
   PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationLink,
   PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
 } from "./ui/pagination";
-import { Skeleton } from "./ui/skeleton";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "./ui/skeleton";
 
 export interface ITableMeta {
   total: number;
@@ -29,6 +29,9 @@ export const TablePagination = ({
   onChangePage: (page: number) => void;
 }) => {
   if (isLoading) return <PaginationSkeleton />;
+
+  // Don't render pagination when there are no results
+  if (meta.totalPages === 0) return null;
 
   return (
     <motion.div
