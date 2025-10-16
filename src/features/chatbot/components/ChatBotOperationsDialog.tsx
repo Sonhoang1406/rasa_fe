@@ -24,22 +24,20 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Activity, Send, Play, Upload } from "lucide-react";
+import { Loader2, Activity, Send, Play, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { chatBotService } from "../api/service";
-import {  HealthCheckResponse, ChatBot ,ActionsListResponse } from "../api/dto/ChatBotResponse";
+import { 
+  ChatBot, 
+  ActionsListResponse, 
+  HealthCheckResponse,
+  ModelDetail 
+} from "../api/dto/ChatBotResponse";
 
 interface ChatBotOperationsDialogProps {
   chatBot: ChatBot | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface ModelDetail {
-  _id: string;
-  name: string;
-  url: string;
-  description?: string;
 }
 
 export function ChatBotOperationsDialog({
@@ -81,7 +79,17 @@ export function ChatBotOperationsDialog({
     try {
       const result = await chatBotService.healthCheck(chatBot._id);
       setHealthStatus(result);
-      toast.success(t("Health check completed"));
+
+      const services = Object.entries(result.data);
+      const offlineServices = services.filter(([_, service]) => 
+        service.status === "offline" || service.status === "not_responding"
+      );
+      
+      if (offlineServices.length > 0) {
+        toast.warning(`${offlineServices.length} ${t("service(s) offline")}`);
+      } else {
+        toast.success(t("All services are online"));
+      }
     } catch (error) {
       console.error("Health check error:", error);
       toast.error(t("Failed to check health"));
@@ -189,7 +197,7 @@ export function ChatBotOperationsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[90vw] sm:max-w-2xl h-[600px] flex flex-col">
+      <DialogContent className="max-w-[90vw] sm:max-w-3xl h-[700px] flex flex-col">
         <DialogHeader>
           <DialogTitle>{t("ChatBot Operations")}</DialogTitle>
           <DialogDescription>
@@ -205,50 +213,101 @@ export function ChatBotOperationsDialog({
           </TabsList>
 
           {/* Health Check Tab */}
-          <TabsContent value="health" className="flex-1 overflow-y-auto mt-4">
-            <div className="space-y-4 h-full">
-              <Button
-                onClick={handleHealthCheck}
-                disabled={healthLoading}
-                className="w-full"
-              >
-                {healthLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Activity className="mr-2 h-4 w-4" />
-                )}
-                {t("Check Health")}
-              </Button>
-
-              {healthStatus && (
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="space-y-2">
-                    <div>
-                      <strong>{t("Status")}:</strong>{" "}
-                      <Badge variant={healthStatus.status === "healthy" ? "default" : "destructive"}>
-                        {healthStatus.status}
-                      </Badge>
-                    </div>
-                    {healthStatus.timestamp && (
-                      <div>
-                        <strong>{t("Timestamp")}:</strong>{" "}
-                        {new Date(healthStatus.timestamp).toLocaleString()}
-                      </div>
-                    )}
-                    {healthStatus.rasaStatus && (
-                      <div>
-                        <strong>{t("Rasa Status")}:</strong> {healthStatus.rasaStatus}
-                      </div>
-                    )}
-                    {healthStatus.flaskStatus && (
-                      <div>
-                        <strong>{t("Flask Status")}:</strong> {healthStatus.flaskStatus}
-                      </div>
-                    )}
-                  </div>
-                </div>
+          <TabsContent value="health" className="flex-1 overflow-y-auto mt-4 space-y-4">
+            <Button
+              onClick={handleHealthCheck}
+              disabled={healthLoading}
+              className="w-full"
+            >
+              {healthLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Activity className="mr-2 h-4 w-4" />
               )}
-            </div>
+              {t("Check Health")}
+            </Button>
+
+            {healthStatus && (
+              <div className="space-y-3">
+                {/* Overall Message */}
+                {healthStatus.message && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center text-blue-700 dark:text-blue-300">
+                      <Activity className="h-4 w-4 mr-2" />
+                      <span className="font-medium">{healthStatus.message}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Services Status */}
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">
+                    {t("Services Status")}:
+                  </h4>
+                  
+                  {Object.entries(healthStatus.data).map(([serviceName, serviceData]) => {
+
+                    const isOnline = serviceData.status === "running";
+                    const isWarning = serviceData.status === "not_responding";
+                    
+                    return (
+                      <div
+                        key={serviceName}
+                        className={`p-4 rounded-lg border-2 ${
+                          isOnline
+                            ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700"
+                            : isWarning
+                            ? "bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700"
+                            : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center mb-2">
+                              {isOnline ? (
+                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
+                              ) : (
+                                <AlertCircle className={`h-4 w-4 mr-2 ${
+                                  isWarning 
+                                    ? "text-yellow-600 dark:text-yellow-400" 
+                                    : "text-red-600 dark:text-red-400"
+                                }`} />
+                              )}
+                              <h5 className="font-semibold text-sm">{serviceName}</h5>
+                            </div>
+                            
+                            <Badge
+                              variant={isOnline ? "default" : "destructive"}
+                              className={isWarning ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                            >
+                              {serviceData.status.toUpperCase()}
+                            </Badge>
+
+                            {serviceData.error && (
+                              <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border border-red-200 dark:border-red-800">
+                                <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
+                                  {t("Error Details")}:
+                                </p>
+                                <p className="text-xs text-red-600 dark:text-red-400 font-mono break-all">
+                                  {serviceData.error}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {!healthStatus && !healthLoading && (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                <p>{t("Click button above to check health status")}</p>
+              </div>
+            )}
           </TabsContent>
 
           {/* Models Tab */}

@@ -1,3 +1,5 @@
+// ChatBotResponse.ts
+
 export interface ChatBotQuery {
   page?: number;
   limit?: number;
@@ -83,7 +85,6 @@ export interface ChatBotDetailResponse extends ChatBot {
   // Có thể thêm các trường khác nếu cần
 }
 
-
 // Model detail interface
 export interface ModelDetail {
   _id: string;
@@ -94,7 +95,6 @@ export interface ModelDetail {
   chatbotId?: string;
 }
 
-// UPDATED: Thêm field details
 export interface ModelsListResponse {
   models: string[];
   total: number;
@@ -112,11 +112,18 @@ export interface ActionsListResponse {
   total: number;
 }
 
+// UPDATED: Health Check Response to match backend
+export interface ServiceStatus {
+  error?: string;
+  status: "running" | "not_responding" | "offline";
+}
+
 export interface HealthCheckResponse {
-  status: string;
-  timestamp?: string;
-  rasaStatus?: string;
-  flaskStatus?: string;
+  success: boolean;
+  data: {
+    [serviceName: string]: ServiceStatus;
+  };
+  message: string;
 }
 
 export interface SendModelResponse {
