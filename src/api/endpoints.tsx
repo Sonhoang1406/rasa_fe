@@ -122,14 +122,4 @@ export default {
     SOFT_DELETE: (id: string) => `/api/v1/slot/${id}/soft`,
     RESTORE: (id: string) => `/api/v1/slot/${id}/restore`,
   },
-
-  UQUESTION_ENDPOINTS: {
-    GET_ALL_PAGINATED: "/api/v1/unanswered-question",
-    GET_BY_ID: (id: string) => `/api/v1/unanswered-question/${id}`,
-    CREATE: "/api/v1/unanswered-question",
-    UPDATE: (id: string) => `/api/v1/unanswered-question/${id}`,
-    HARD_DELETE: (id: string) => `/api/v1/unanswered-question/${id}/hard`,
-    SOFT_DELETE: (id: string) => `/api/v1/unanswered-question/${id}/soft`,
-    RESTORE: (id: string) => `/api/v1/unanswered-question/${id}/restore`,
-  },
 } as const;
