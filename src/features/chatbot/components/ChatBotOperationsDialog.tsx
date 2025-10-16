@@ -105,10 +105,10 @@ export function ChatBotOperationsDialog({
       const result = await chatBotService.getModelsList(chatBot._id);
       setModelsList(result.models || []);
       setModelsDetails(result.details || []);
-      toast.success(`${t("Found")} ${result.total} ${t("models")}`);
+      toast.success(`${t("Found")} ${result.total} ${t("models in Rasa server")}`);
     } catch (error) {
       console.error("Get models error:", error);
-      toast.error(t("Failed to fetch models"));
+      toast.error(t("Failed to fetch models from Rasa"));
     } finally {
       setModelsLoading(false);
     }
@@ -120,7 +120,7 @@ export function ChatBotOperationsDialog({
     try {
       const result = await chatBotService.getActionsList(chatBot._id);
       setActionsList(result.actions || []);
-      toast.success(`${t("Found")} ${result.total} ${t("actions")}`);
+      toast.success(`${t("Found")} ${result.total} ${t("actions in MongoDB")}`);
     } catch (error) {
       console.error("Get actions error:", error);
       toast.error(t("Failed to fetch actions"));
@@ -134,11 +134,13 @@ export function ChatBotOperationsDialog({
     setSendModelLoading(true);
     try {
       await chatBotService.sendModel(chatBot._id, { modelId: selectedModelId });
-      toast.success(t("Model sent successfully"));
+      toast.success(t("Model uploaded from MinIO to Rasa successfully"));
       setSelectedModelId("");
+      // Refresh models list after sending
+      handleGetModelsList();
     } catch (error) {
       console.error("Send model error:", error);
-      toast.error(t("Failed to send model"));
+      toast.error(t("Failed to send model to Rasa"));
     } finally {
       setSendModelLoading(false);
     }
@@ -149,11 +151,11 @@ export function ChatBotOperationsDialog({
     setRunModelLoading(true);
     try {
       await chatBotService.runModel(chatBot._id, { modelName: selectedModelName });
-      toast.success(t("Model started successfully"));
+      toast.success(t("Model activated in Rasa successfully"));
       setSelectedModelName("");
     } catch (error) {
       console.error("Run model error:", error);
-      toast.error(t("Failed to run model"));
+      toast.error(t("Failed to activate model in Rasa"));
     } finally {
       setRunModelLoading(false);
     }
@@ -168,12 +170,12 @@ export function ChatBotOperationsDialog({
         actionIds: selectedActionIds.length > 0 ? selectedActionIds : undefined,
       });
       
-      toast.success(t("Actions pushed successfully"));
+      toast.success(t("Actions pushed to Rasa successfully. actions.py file updated."));
       setPushActionModelId("");
       setSelectedActionIds([]);
     } catch (error) {
       console.error("Push actions error:", error);
-      toast.error(t("Failed to push actions"));
+      toast.error(t("Failed to push actions to Rasa"));
     } finally {
       setPushActionLoading(false);
     }
@@ -246,7 +248,6 @@ export function ChatBotOperationsDialog({
                   </h4>
                   
                   {Object.entries(healthStatus.data).map(([serviceName, serviceData]) => {
-
                     const isOnline = serviceData.status === "running";
                     const isWarning = serviceData.status === "not_responding";
                     
@@ -313,35 +314,56 @@ export function ChatBotOperationsDialog({
           {/* Models Tab */}
           <TabsContent value="models" className="flex-1 overflow-y-auto mt-4">
             <div className="space-y-4 h-full">
-              {/* Get Models List */}
+              {/* Get Models List from Rasa */}
               <div className="space-y-2">
-                <Button
-                  onClick={handleGetModelsList}
-                  disabled={modelsLoading}
-                  className="w-full"
-                >
-                  {modelsLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : null}
-                  {t("Get Models List")}
-                </Button>
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-semibold">{t("Models in Rasa Server")}</Label>
+                  <Button
+                    onClick={handleGetModelsList}
+                    disabled={modelsLoading}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {modelsLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
+                    {t("Refresh")}
+                  </Button>
+                </div>
 
                 {modelsList.length > 0 && (
-                  <div className="p-4 bg-muted rounded-lg max-h-40 overflow-y-auto">
-                    <h4 className="font-semibold mb-2">{t("Available Models")}:</h4>
+                  <div className="p-4 bg-muted rounded-lg max-h-48 overflow-y-auto">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t("Models available in Rasa server")} ({modelsList.length})
+                    </p>
                     <div className="space-y-1">
                       {modelsList.map((model, index) => (
-                        <div key={index} className="text-sm">• {model}</div>
+                        <div key={index} className="flex items-center text-sm p-2 bg-background rounded border">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                          <span className="font-mono text-xs">{model}</span>
+                        </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {!modelsLoading && modelsList.length === 0 && (
+                  <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
+                    {t("No models found in Rasa server. Click Refresh to check.")}
                   </div>
                 )}
               </div>
 
               <div className="border-t pt-4 space-y-4">
-                {/* Send Model */}
+                {/* Send Model - Upload from MinIO to Rasa */}
                 <div className="space-y-2">
-                  <Label htmlFor="modelId">{t("Send Model")}</Label>
+                  <Label htmlFor="modelId" className="flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    {t("Send Model to Rasa")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Upload trained model from MinIO storage to Rasa server")}
+                  </p>
                   <div className="flex gap-2">
                     <Select
                       value={selectedModelId}
@@ -351,8 +373,8 @@ export function ChatBotOperationsDialog({
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder={
                           modelsDetails.length === 0 
-                            ? t("Get models list first") 
-                            : t("Select model to send")
+                            ? t("No models in MinIO storage") 
+                            : t("Select model from MinIO")
                         } />
                       </SelectTrigger>
                       <SelectContent>
@@ -377,15 +399,21 @@ export function ChatBotOperationsDialog({
                       {sendModelLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Send className="h-4 w-4" />
+                        <Upload className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
                 </div>
 
-                {/* Run Model */}
+                {/* Run Model - Activate model in Rasa */}
                 <div className="space-y-2">
-                  <Label htmlFor="modelName">{t("Run Model")}</Label>
+                  <Label htmlFor="modelName" className="flex items-center gap-2">
+                    <Play className="h-4 w-4" />
+                    {t("Run Model")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Activate a model that exists in Rasa server")}
+                  </p>
                   <div className="flex gap-2">
                     <Select
                       value={selectedModelName}
@@ -396,13 +424,13 @@ export function ChatBotOperationsDialog({
                         <SelectValue placeholder={
                           modelsList.length === 0 
                             ? t("Get models list first") 
-                            : t("Select model to run")
+                            : t("Select model to activate")
                         } />
                       </SelectTrigger>
                       <SelectContent>
                         {modelsList.map((model, index) => (
                           <SelectItem key={index} value={model}>
-                            {model}
+                            <span className="font-mono text-xs">{model}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -410,6 +438,7 @@ export function ChatBotOperationsDialog({
                     <Button
                       onClick={handleRunModel}
                       disabled={runModelLoading || !selectedModelName}
+                      className="bg-green-600 hover:bg-green-700"
                     >
                       {runModelLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -436,7 +465,7 @@ export function ChatBotOperationsDialog({
                   {actionsLoading ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  {t("Get Actions List")}
+                  {t("Get Actions List from MongoDB")}
                 </Button>
 
                 {actionsList.length > 0 && (
@@ -486,7 +515,13 @@ export function ChatBotOperationsDialog({
               <div className="border-t pt-4 space-y-4">
                 {/* Push Actions */}
                 <div className="space-y-2">
-                  <Label>{t("Push Actions")}</Label>
+                  <Label className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    {t("Push Actions to Rasa")}
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    {t("Overwrite actions.py file in Rasa via Flask API. This syncs MongoDB actions to Rasa server.")}
+                  </p>
                   
                   <Select
                     value={pushActionModelId}
@@ -501,7 +536,7 @@ export function ChatBotOperationsDialog({
                       } />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">{t("None - Push all")}</SelectItem>
+                      <SelectItem value="none">{t("None - Push all actions")}</SelectItem>
                       {modelsDetails.map((model) => (
                         <SelectItem key={model._id} value={model._id}>
                           {model.name}
@@ -511,23 +546,41 @@ export function ChatBotOperationsDialog({
                   </Select>
 
                   {selectedActionIds.length > 0 && (
-                    <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded text-sm">
-                      <strong>{t("Selected")}:</strong> {selectedActionIds.length} {t("actions")}
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">
+                          <strong>{t("Selected")}:</strong> {selectedActionIds.length} {t("actions")}
+                        </span>
+                        <Badge variant="secondary">{t("Custom Selection")}</Badge>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedActionIds.length === 0 && actionsList.length > 0 && (
+                    <div className="p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded text-sm">
+                      <AlertCircle className="h-4 w-4 inline mr-2" />
+                      {t("No actions selected. Will push all actions to Rasa.")}
                     </div>
                   )}
 
                   <Button
                     onClick={handlePushAction}
                     disabled={pushActionLoading || actionsList.length === 0}
-                    className="w-full"
+                    className="w-full bg-orange-600 hover:bg-orange-700"
                   >
                     {pushActionLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <Upload className="mr-2 h-4 w-4" />
                     )}
-                    {t("Push Actions")}
+                    {t("Push Actions to Rasa")}
                   </Button>
+                  
+                  {actionsList.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      {t("Get actions list first to push them to Rasa")}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
