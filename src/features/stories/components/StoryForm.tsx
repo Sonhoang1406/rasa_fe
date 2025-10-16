@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-// Note: Switch removed because it's not used in this form
+import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -16,42 +18,25 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Plus,
-  X,
-  GripVertical,
-  AlertCircle,
-  SlidersHorizontal,
-  FileCode,
-  HelpCircle,
-  Code2,
-  FormInput,
-} from "lucide-react";
+import { Plus, X, Settings, GripVertical, AlertCircle, SlidersHorizontal, FileCode, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
-import { storyService } from "@/features/stories/api/service";
+import { storyService } from "../api/service";
+import { intentService } from "@/features/intents/api/service";
+import { actionService } from "@/features/action/api/service";
+import { responseService } from "@/features/reponses/api/service";
 import { IIntent } from "@/interfaces/intent.interface";
 import { IAction } from "@/interfaces/action.interface";
 import { IMyResponse } from "@/interfaces/response.interface";
-
-const toSnakeCase = (str: string): string => {
-  return str
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
-};
+import { IStory } from "@/interfaces/story.interface";
 
 interface StoryStep {
   id: string;
-  type: "intent" | "action" | "response";
+  type: 'intent' | 'action' | 'response';
   data: IIntent | IAction | IMyResponse;
 }
 
 interface StoryFormProps {
-  initialStory?: any;
+  initialStory?: IStory;
   onSubmit: (storyData: any) => Promise<void>;
   onCancel: () => void;
   submitButtonText: string;
@@ -59,29 +44,20 @@ interface StoryFormProps {
 }
 
 export function StoryForm({
-  initialStory = {
-    name: "",
-    description: "",
-    define: "",
-    intents: [],
-    action: [],
-    responses: [],
-    entities: [],
-    slots: [],
-    roles: [],
-  },
+  initialStory,
   onSubmit,
   onCancel,
   submitButtonText,
-  isSubmitting = false,
+  isSubmitting
 }: StoryFormProps) {
   const { t } = useTranslation();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Form states
-  const [name, setName] = useState(initialStory.name);
-  const [description, setDescription] = useState(initialStory.description);
-  const [yamlDefine, setYamlDefine] = useState(initialStory.define || "");
+  // Form fields
+  const [name, setName] = useState(initialStory?.name || "");
+  const [description, setDescription] = useState(initialStory?.description || "");
+  const [yamlDefine, setYamlDefine] = useState("");
+
+  // Mode selection
   const [isExpertMode, setIsExpertMode] = useState(false);
 
   // Step management
@@ -91,8 +67,7 @@ export function StoryForm({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dropZoneIndex, setDropZoneIndex] = useState<number | null>(null);
 
-  // Validation
-  const [errors, setErrors] = useState<string[]>([]);
+  // Validation errors
   const [yamlErrors, setYamlErrors] = useState<string[]>([]);
 
   // Intent dialog state
@@ -107,13 +82,14 @@ export function StoryForm({
   const [actionSearchQuery, setActionSearchQuery] = useState("");
   const [actionSearchResults, setActionSearchResults] = useState<IAction[]>([]);
   const [responseSearchQuery, setResponseSearchQuery] = useState("");
-  const [responseSearchResults, setResponseSearchResults] = useState<
-    IMyResponse[]
-  >([]);
+  const [responseSearchResults, setResponseSearchResults] = useState<IMyResponse[]>([]);
   const [isSearchingActions, setIsSearchingActions] = useState(false);
   const [isSearchingResponses, setIsSearchingResponses] = useState(false);
   const [actionFilterDeleted, setActionFilterDeleted] = useState(false);
   const [responseFilterDeleted, setResponseFilterDeleted] = useState(false);
+
+  // Validation
+  const [errors, setErrors] = useState<string[]>([]);
 
   // Help dialog state
   const [showHelp, setShowHelp] = useState(false);
@@ -123,229 +99,231 @@ export function StoryForm({
   const [selectedActions, setSelectedActions] = useState<IAction[]>([]);
   const [selectedResponses, setSelectedResponses] = useState<IMyResponse[]>([]);
 
-  // Update YAML when name changes
-  useEffect(() => {
-    generateYamlDefine(storySteps);
-  }, [name]);
+  // Textarea ref for expert mode
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Search intents for dialog
-  useEffect(() => {
-    if (intentSearchQuery.length > 0) {
-      const debounce = setTimeout(async () => {
-        try {
-          setIsSearchingIntents(true);
-          const results = await storyService.searchIntentForStory(
-            intentSearchQuery
-          );
-          setIntentSearchResults(results);
-        } catch (error) {
-          console.error("Error searching intents:", error);
-          toast.error(t("Failed to search intents"));
-        } finally {
-          setIsSearchingIntents(false);
-        }
-      }, 300);
+  // Helper function to convert to snake_case
+  const toSnakeCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "")
+      .replace(/_+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  };
 
-      return () => clearTimeout(debounce);
-    } else {
-      setIntentSearchResults([]);
+  // Fetch names for IDs
+  const fetchNameForId = async (id: string, type: 'intent' | 'action' | 'response'): Promise<any> => {
+    try {
+      switch (type) {
+        case 'intent':
+          const intent = await intentService.getIntentById(id);
+          return intent || null;
+
+        case 'action':
+          const action = await actionService.getActionById(id);
+          return action || null;
+
+        case 'response':
+          const response = await responseService.getResponseById(id);
+          return response || null;
+
+        default:
+          return null;
+      }
+    } catch (error) {
+      console.error(`Error fetching ${type} ${id}:`, error);
+      return null;
     }
-  }, [intentSearchQuery]);
+  };
 
-  // Search actions
-  useEffect(() => {
-    if (actionSearchQuery.length > 0) {
-      const debounce = setTimeout(async () => {
-        try {
-          setIsSearchingActions(true);
-          const results = await storyService.searchActionForStory(
-            actionSearchQuery
-          );
-          setActionSearchResults(results);
-        } catch (error) {
-          console.error("Error searching actions:", error);
-          toast.error(t("Failed to search actions"));
-        } finally {
-          setIsSearchingActions(false);
+  // Parse steps from YAML define
+  const parseStepsFromDefine = async (yamlDefine: string): Promise<StoryStep[]> => {
+    const steps: StoryStep[] = [];
+    const lines = yamlDefine.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Look for step lines with intent or action
+      if (line.includes('- intent:') || line.includes('- action:')) {
+        // Extract ID from brackets [id]
+        const match = line.match(/\[([^\]]+)\]/);
+        if (match) {
+          const id = match[1];
+
+          if (line.includes('- intent:')) {
+            // Fetch real data for intent ID
+            const intent = await fetchNameForId(id, 'intent');
+            if (intent) {
+              steps.push({
+                id: `intent_${id}_${i}`,
+                type: 'intent',
+                data: intent
+              });
+            }
+          } else if (line.includes('- action:')) {
+            // Could be action or response - try both
+            let stepData = await fetchNameForId(id, 'action');
+            let stepType: 'action' | 'response' = 'action';
+
+            if (!stepData) {
+              // Try as response
+              stepData = await fetchNameForId(id, 'response');
+              stepType = 'response';
+            }
+
+            if (stepData) {
+              steps.push({
+                id: `${stepType}_${id}_${i}`,
+                type: stepType,
+                data: stepData
+              });
+            }
+          }
         }
-      }, 300);
-
-      return () => clearTimeout(debounce);
-    } else {
-      setActionSearchResults([]);
+      }
     }
-  }, [actionSearchQuery, t]);
 
-  // Search responses
+    return steps;
+  };
+
+  // Load selected items from initialStory
+  const loadSelectedItems = async (story: IStory) => {
+    try {
+      // Load intents
+      if (story.intents && story.intents.length > 0) {
+        const intents = await Promise.all(
+          story.intents.map(id => fetchNameForId(id, 'intent'))
+        );
+        setSelectedIntents(intents.filter(Boolean));
+      }
+
+      // Load actions  
+      if (story.action && story.action.length > 0) {
+        const actions = await Promise.all(
+          story.action.map(id => fetchNameForId(id, 'action'))
+        );
+        setSelectedActions(actions.filter(Boolean));
+      }
+
+      // Load responses
+      if (story.responses && story.responses.length > 0) {
+        const responses = await Promise.all(
+          story.responses.map(id => fetchNameForId(id, 'response'))
+        );
+        setSelectedResponses(responses.filter(Boolean));
+      }
+    } catch (error) {
+      console.error('Error loading selected items:', error);
+    }
+  };
+
+  // Initialize form with existing story data
   useEffect(() => {
-    if (responseSearchQuery.length > 0) {
-      const debounce = setTimeout(async () => {
-        try {
-          setIsSearchingResponses(true);
-          const results = await storyService.searchResponseForStory(
-            responseSearchQuery
-          );
-          setResponseSearchResults(results);
-        } catch (error) {
-          console.error("Error searching responses:", error);
-          toast.error(t("Failed to search responses"));
-        } finally {
-          setIsSearchingResponses(false);
+    const initializeSteps = async () => {
+      if (initialStory) {
+        setName(initialStory.name || "");
+        setDescription(initialStory.description || "");
+
+        // Parse steps from YAML define to maintain correct order
+        if (initialStory.define) {
+          try {
+            const steps = await parseStepsFromDefine(initialStory.define);
+            setStorySteps(steps);
+            setYamlDefine(initialStory.define);
+
+            // Don't force expert mode - let user choose
+            // setIsExpertMode(true);
+          } catch (error) {
+            console.error('Error parsing steps from YAML:', error);
+            // Fallback to empty steps
+            setStorySteps([]);
+          }
         }
-      }, 300);
 
-      return () => clearTimeout(debounce);
+        // Load selected items for expert mode
+        loadSelectedItems(initialStory);
+      }
+    };
+
+    initializeSteps();
+  }, [initialStory]);
+
+  // Update YAML when name changes (both visual and expert mode)
+  useEffect(() => {
+    if (!isExpertMode) {
+      // Visual mode - regenerate YAML from steps
+      const newYaml = generateYamlFromSteps();
+      if (newYaml) {
+        setYamlDefine(newYaml);
+      }
     } else {
-      setResponseSearchResults([]);
+      // Expert mode - update story name in existing YAML
+      updateStoryNameInYaml();
     }
-  }, [responseSearchQuery, t]);
+  }, [name, isExpertMode]);
 
-  // Helper functions
+  // Function to update story name in YAML without affecting other content
+  const updateStoryNameInYaml = () => {
+    if (!yamlDefine.trim() || !name.trim()) return;
+
+    const sanitizedName = toSnakeCase(name);
+    const lines = yamlDefine.split('\n');
+
+    // Find and update the story name line
+    const updatedLines = lines.map(line => {
+      if (line.trim().startsWith('- story:')) {
+        return `- story: ${sanitizedName}`;
+      }
+      return line;
+    });
+
+    const updatedYaml = updatedLines.join('\n');
+    if (updatedYaml !== yamlDefine) {
+      setYamlDefine(updatedYaml);
+    }
+  };
+
+  // Generate YAML from visual steps
+  const generateYamlFromSteps = (): string => {
+    if (storySteps.length === 0) {
+      return "";
+    }
+
+    const storyName = toSnakeCase(name) || "story";
+    let yaml = `- story: ${storyName}\n`;
+    yaml += `  steps:\n`;
+
+    storySteps.forEach((step) => {
+      switch (step.type) {
+        case 'intent':
+          yaml += `  - intent: [${step.data._id}]\n`;
+          break;
+        case 'action':
+          yaml += `  - action: [${step.data._id}]\n`;
+          break;
+        case 'response':
+          yaml += `  - action: [${step.data._id}]\n`;
+          break;
+      }
+    });
+
+    return yaml;
+  };
+
+  // Generate template YAML
   const generateTemplate = () => {
     const sanitizedName = toSnakeCase(name) || "story_name";
     const template = `- story: ${sanitizedName}
   steps:
-    - intent: example_intent
-    - action: example_action`;
+    - intent: [intent_id]
+    - action: [action_id]`;
     setYamlDefine(template);
-    setErrors([]);
+    setYamlErrors([]);
   };
 
-  const generateYamlDefine = (steps: typeof storySteps) => {
-    const sanitizedName = toSnakeCase(name) || "story_name";
-    let yaml = `- story: ${sanitizedName}\n`;
-
-    if (steps.length > 0) {
-      yaml += "  steps:\n";
-      steps.forEach((step) => {
-        const stepId = step.data._id;
-        if (step.type === "intent") {
-          yaml += `    - intent: ${stepId}\n`;
-        } else if (step.type === "action") {
-          yaml += `    - action: ${stepId}\n`;
-        } else if (step.type === "response") {
-          yaml += `    - action: ${stepId}\n`; // Responses are also actions in RASA YAML
-        }
-      });
-    }
-
-    setYamlDefine(yaml);
-  };
-
-  const validateForm = () => {
-    const newErrors: string[] = [];
-
-    if (!name.trim()) {
-      newErrors.push(t("Story name is required"));
-    }
-
-    if (isExpertMode) {
-      if (!yamlDefine.trim()) {
-        newErrors.push(t("YAML definition is required"));
-      }
-    } else {
-      if (storySteps.length === 0) {
-        newErrors.push(t("At least one step is required"));
-      }
-    }
-
-    setErrors(newErrors);
-    return newErrors.length === 0;
-  };
-
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
-
-    try {
-      const storyData = {
-        name: name.trim(),
-        description: description.trim(),
-        define: yamlDefine,
-        intents: [
-          ...new Set(
-            storySteps.filter((s) => s.type === "intent").map((s) => s.data._id)
-          ),
-        ],
-        action: [
-          ...new Set(
-            storySteps.filter((s) => s.type === "action").map((s) => s.data._id)
-          ),
-        ],
-        responses: [
-          ...new Set(
-            storySteps
-              .filter((s) => s.type === "response")
-              .map((s) => s.data._id)
-          ),
-        ],
-        slots: [],
-        roles: [],
-        entities: [],
-      };
-
-      await onSubmit(storyData);
-    } catch (error: any) {
-      console.error("Error submitting story form:", error);
-      toast.error(error?.response?.data?.message || t("Failed to save story"));
-    }
-  };
-
-  // Step management
-  const handleSelectIntent = (intent: IIntent) => {
-    const stepId = `intent_${intent._id}_${Date.now()}`;
-    const newStep = {
-      id: stepId,
-      type: "intent" as const,
-      data: intent,
-    };
-    setStorySteps((prev) => [...prev, newStep]);
-    setIntentDialogOpen(false);
-    setIntentSearchQuery("");
-    generateYamlDefine([...storySteps, newStep]);
-  };
-
-  const handleSelectAction = (action: IAction) => {
-    const stepId = `action_${action._id}_${Date.now()}`;
-    const newStep = {
-      id: stepId,
-      type: "action" as const,
-      data: action,
-    };
-    setStorySteps((prev) => [...prev, newStep]);
-    setActionDialogOpen(false);
-    setActionSearchQuery("");
-    generateYamlDefine([...storySteps, newStep]);
-  };
-
-  const handleSelectResponse = (response: IMyResponse) => {
-    const stepId = `response_${response._id}_${Date.now()}`;
-    const newStep = {
-      id: stepId,
-      type: "response" as const,
-      data: response,
-    };
-    setStorySteps((prev) => [...prev, newStep]);
-    setActionDialogOpen(false);
-    setResponseSearchQuery("");
-    generateYamlDefine([...storySteps, newStep]);
-  };
-
-  const removeStep = (stepId: string) => {
-    const updatedSteps = storySteps.filter((step) => step.id !== stepId);
-    setStorySteps(updatedSteps);
-    generateYamlDefine(updatedSteps);
-  };
-
-  // Fetch names for IDs
-  // Simplified: storyService doesn't expose getXById helpers; return readable placeholder instead
-  const fetchNameForId = async (
-    id: string,
-    type: "intent" | "action" | "response"
-  ): Promise<string> => {
-    return `${type}_${id.slice(-6)}`;
-  };
-
-  // Expert mode insert helpers
+  // Insert intent at cursor position (Expert Mode)
   const insertIntentAtCursor = (intent: IIntent) => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
@@ -356,6 +334,7 @@ export function StoryForm({
 
       setYamlDefine(textBefore + pattern + textAfter);
 
+      // Set cursor after inserted text
       setTimeout(() => {
         textarea.focus();
         textarea.setSelectionRange(
@@ -366,6 +345,7 @@ export function StoryForm({
     }
   };
 
+  // Insert action at cursor position (Expert Mode)
   const insertActionAtCursor = (action: IAction) => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
@@ -386,6 +366,7 @@ export function StoryForm({
     }
   };
 
+  // Insert response at cursor position (Expert Mode)
   const insertResponseAtCursor = (response: IMyResponse) => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
@@ -406,55 +387,224 @@ export function StoryForm({
     }
   };
 
-  // Drag & Drop handlers
-  const handleDragStart = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", "");
+  // Search functions
+  const searchIntents = async (query: string) => {
+    if (!query.trim()) {
+      setIntentSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearchingIntents(true);
+      const results = await storyService.searchIntentForStory(query);
+      setIntentSearchResults(results);
+    } catch (error) {
+      console.error("Error searching intents:", error);
+      toast.error(t("Failed to search intents"));
+    } finally {
+      setIsSearchingIntents(false);
+    }
   };
 
-  const handleDragOver = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (
-      draggedIndex !== null &&
-      draggedIndex !== index &&
-      dropZoneIndex !== index
-    ) {
+  const searchActions = async (query: string) => {
+    if (!query.trim()) {
+      setActionSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearchingActions(true);
+      const results = await storyService.searchActionForStory(query);
+      setActionSearchResults(results);
+    } catch (error) {
+      console.error("Error searching actions:", error);
+      toast.error(t("Failed to search actions"));
+    } finally {
+      setIsSearchingActions(false);
+    }
+  };
+
+  const searchResponses = async (query: string) => {
+    if (!query.trim()) {
+      setResponseSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearchingResponses(true);
+      const results = await storyService.searchResponseForStory(query);
+      setResponseSearchResults(results);
+    } catch (error) {
+      console.error("Error searching responses:", error);
+      toast.error(t("Failed to search responses"));
+    } finally {
+      setIsSearchingResponses(false);
+    }
+  };
+
+  // Add steps
+  const addIntentStep = (intent: IIntent) => {
+    // Check if already selected
+    if (storySteps.find(step => step.type === 'intent' && step.data._id === intent._id)) {
+      toast.warning(t("Intent already added to this story"));
+      return;
+    }
+
+    const newStep: StoryStep = {
+      id: `intent_${intent._id}_${Date.now()}`,
+      type: 'intent',
+      data: intent
+    };
+    const updatedSteps = [...storySteps, newStep];
+    setStorySteps(updatedSteps);
+
+    // Also add to selected intents if not already present
+    if (!selectedIntents.find(i => i._id === intent._id)) {
+      setSelectedIntents([...selectedIntents, intent]);
+    }
+
+    setIntentDialogOpen(false);
+    setIntentSearchQuery("");
+    setIntentSearchResults([]);
+
+    // Real-time validation feedback
+    const sequenceErrors = validateStepSequence(updatedSteps);
+    const sequenceWarnings = getStepSequenceWarnings(updatedSteps);
+
+    if (sequenceErrors.length === 0) {
+      toast.success(t("Intent added successfully"));
+      if (sequenceWarnings.length > 0) {
+        toast.info(t("Suggestion: ") + sequenceWarnings[0]);
+      }
+    } else {
+      toast.error(t("Error: ") + sequenceErrors[0]);
+    }
+  };
+
+  const addActionStep = (action: IAction) => {
+    // Check if already selected
+    if (storySteps.find(step => step.type === 'action' && step.data._id === action._id)) {
+      toast.warning(t("Action already added to this story"));
+      return;
+    }
+
+    const newStep: StoryStep = {
+      id: `action_${action._id}_${Date.now()}`,
+      type: 'action',
+      data: action
+    };
+    const updatedSteps = [...storySteps, newStep];
+    setStorySteps(updatedSteps);
+
+    // Also add to selected actions if not already present
+    if (!selectedActions.find(a => a._id === action._id)) {
+      setSelectedActions([...selectedActions, action]);
+    }
+
+    setActionDialogOpen(false);
+    setActionSearchQuery("");
+    setActionSearchResults([]);
+
+    // Real-time validation feedback
+    const sequenceErrors = validateStepSequence(updatedSteps);
+    const sequenceWarnings = getStepSequenceWarnings(updatedSteps);
+
+    if (sequenceErrors.length === 0) {
+      toast.success(t("Action added successfully"));
+      if (sequenceWarnings.length > 0) {
+        toast.info(t("Suggestion: ") + sequenceWarnings[0]);
+      }
+    } else {
+      toast.error(t("Error: ") + sequenceErrors[0]);
+    }
+  };
+
+  const addResponseStep = (response: IMyResponse) => {
+    // Check if already selected
+    if (storySteps.find(step => step.type === 'response' && step.data._id === response._id)) {
+      toast.warning(t("Response already added to this story"));
+      return;
+    }
+
+    const newStep: StoryStep = {
+      id: `response_${response._id}_${Date.now()}`,
+      type: 'response',
+      data: response
+    };
+    const updatedSteps = [...storySteps, newStep];
+    setStorySteps(updatedSteps);
+
+    // Also add to selected responses if not already present
+    if (!selectedResponses.find(r => r._id === response._id)) {
+      setSelectedResponses([...selectedResponses, response]);
+    }
+
+    setActionDialogOpen(false);
+    setResponseSearchQuery("");
+    setResponseSearchResults([]);
+
+    // Real-time validation feedback
+    const sequenceErrors = validateStepSequence(updatedSteps);
+    const sequenceWarnings = getStepSequenceWarnings(updatedSteps);
+
+    if (sequenceErrors.length === 0) {
+      toast.success(t("Response added successfully"));
+      if (sequenceWarnings.length > 0) {
+        toast.info(t("Suggestion: ") + sequenceWarnings[0]);
+      }
+    } else {
+      toast.error(t("Error: ") + sequenceErrors[0]);
+    }
+  };
+
+  // Remove step
+  const removeStep = (stepId: string) => {
+    const updatedSteps = storySteps.filter(step => step.id !== stepId);
+    setStorySteps(updatedSteps);
+
+    // Re-validate after removal
+    if (updatedSteps.length > 0) {
+      const sequenceErrors = validateStepSequence(updatedSteps);
+      if (sequenceErrors.length === 0) {
+        toast.success(t("Step removed successfully"));
+      } else {
+        toast.error(t("Error after removal: ") + sequenceErrors[0]);
+      }
+    } else {
+      toast.success(t("Step removed successfully"));
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (index: number) => {
+    if (draggedIndex !== null && draggedIndex !== index && dropZoneIndex !== index) {
       setDropZoneIndex(index);
     }
   };
 
-  const handleDragEnter = (
-    e: React.DragEvent<HTMLDivElement>,
-    index: number
-  ) => {
-    e.preventDefault();
-    if (draggedIndex !== null && draggedIndex !== index)
+  const handleDragEnter = (index: number) => {
+    if (draggedIndex !== null && draggedIndex !== index) {
       setDropZoneIndex(index);
+    }
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    // Only clear if we're really leaving the element
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
+
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       setDropZoneIndex(null);
     }
   };
 
-  const handleDrop = (
-    e: React.DragEvent<HTMLDivElement>,
-    dropIndex: number
-  ) => {
-    e.preventDefault();
+  const handleDrop = (dropIndex: number) => {
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null);
       setDropZoneIndex(null);
@@ -463,24 +613,34 @@ export function StoryForm({
 
     const newSteps = [...storySteps];
     const draggedStep = newSteps[draggedIndex];
+
+    // Remove the dragged item
     newSteps.splice(draggedIndex, 1);
+
+    // Insert before the target item by default
     let finalIndex = dropIndex;
-    if (draggedIndex < dropIndex) finalIndex = dropIndex - 1;
+
+    // If dragging from before the target, adjust index
+    if (draggedIndex < dropIndex) {
+      finalIndex = dropIndex - 1;
+    }
+
+    // Ensure index is within bounds
     finalIndex = Math.max(0, Math.min(finalIndex, newSteps.length));
+
+    // Insert at new position
     newSteps.splice(finalIndex, 0, draggedStep);
 
     setStorySteps(newSteps);
-    generateYamlDefine(newSteps);
     setDraggedIndex(null);
     setDropZoneIndex(null);
 
+    // Validate sequence after reordering
     const sequenceErrors = validateStepSequence(newSteps);
     if (sequenceErrors.length === 0) {
       toast.success(t("Step order updated"));
     } else {
-      toast.warning(
-        t("Step order updated, but sequence validation: ") + sequenceErrors[0]
-      );
+      toast.error(t("Error after reordering: ") + sequenceErrors[0]);
     }
   };
 
@@ -489,132 +649,108 @@ export function StoryForm({
     setDropZoneIndex(null);
   };
 
-  // Handle adding selected items (expert mode)
-  // Note: explicit "add to selected" helpers removed because selection/insertion is handled
-  // directly where needed (handleSelectIntent/Action/Response and badge clicks).
-
-  // Validate step sequence logic
+  // Validate step sequence logic (Stories are more flexible than Rules)
   const validateStepSequence = (steps: StoryStep[]): string[] => {
     const errors: string[] = [];
+
     if (steps.length === 0) {
       errors.push(t("Story must have at least one step"));
       return errors;
     }
-    if (steps[0].type !== "intent") {
-      errors.push(t("Story must start with an Intent"));
-    }
 
+    // For stories, we're much more permissive than rules
+    // Only flag truly problematic patterns, not just recommendations
+
+    // Check for completely empty or invalid steps
     for (let i = 0; i < steps.length; i++) {
       const currentStep = steps[i];
-      const nextStep = steps[i + 1];
-      const prevStep = steps[i - 1];
 
-      if (currentStep.type === "intent") {
-        if (i === steps.length - 1) {
-          errors.push(
-            t(
-              "Intent cannot be the last step. It must be followed by an Action or Response"
-            ) + ` (step ${i + 1})`
-          );
-        } else if (nextStep && nextStep.type === "intent") {
-          errors.push(
-            t(
-              "Intent cannot be followed directly by another Intent. Add an Action or Response between them"
-            ) + ` (steps ${i + 1} and ${i + 2})`
-          );
-        }
-      }
-
-      if (currentStep.type === "action" || currentStep.type === "response") {
-        if (!prevStep) {
-          errors.push(
-            t(
-              "Action/Response cannot be the first step. It must be preceded by an Intent"
-            ) + ` (step ${i + 1})`
-          );
-        } else if (prevStep.type === "action" || prevStep.type === "response") {
-          let lastIntentIndex = -1;
-          for (let j = i - 1; j >= 0; j--) {
-            if (steps[j].type === "intent") {
-              lastIntentIndex = j;
-              break;
-            }
-          }
-          if (lastIntentIndex === -1) {
-            errors.push(
-              t("Action/Response group must be preceded by an Intent") +
-                ` (step ${i + 1})`
-            );
-          }
-        }
+      if (!currentStep.data || !currentStep.data._id) {
+        errors.push(t("Invalid step data") + ` (step ${i + 1})`);
       }
     }
 
-    for (let i = 0; i < steps.length; i++) {
-      if (steps[i].type === "intent") {
-        let hasFollowingAction = false;
-        for (let j = i + 1; j < steps.length; j++) {
-          if (steps[j].type === "intent") break;
-          if (steps[j].type === "action" || steps[j].type === "response") {
-            hasFollowingAction = true;
-            break;
-          }
-        }
-        if (!hasFollowingAction && i < steps.length - 1) {
-          errors.push(
-            t("Intent must have at least one Action or Response following it") +
-              ` (step ${i + 1})`
-          );
-        }
-      }
-    }
+    // Stories are flexible - Intent→Response, Intent→Action→Response, etc. are all valid
+    // We don't need to enforce strict sequencing like Rules do
 
     return errors;
   };
 
-  // Validate YAML
-  const validateYAML = (): boolean => {
-    const newErrors: string[] = [];
-    if (!yamlDefine.trim()) {
-      newErrors.push(t("YAML definition is required"));
-      setYamlErrors(newErrors);
-      return false;
+  // Get sequence warnings (non-blocking suggestions)
+  const getStepSequenceWarnings = (steps: StoryStep[]): string[] => {
+    const warnings: string[] = [];
+
+    if (steps.length === 0) return warnings;
+
+    // Suggest starting with intent
+    if (steps[0].type !== 'intent') {
+      warnings.push(t("Stories typically start with an Intent for better conversation flow"));
     }
 
-    const lines: string[] = yamlDefine.split("\n");
-    const storyLine = lines.find((line: string) =>
-      line.trim().startsWith("- story:")
-    );
+    // Suggest following intents with responses/actions
+    for (let i = 0; i < steps.length; i++) {
+      const currentStep = steps[i];
+
+      if (currentStep.type === 'intent' && i === steps.length - 1) {
+        warnings.push(t("Consider adding a Response or Action after this Intent") + ` (step ${i + 1})`);
+      }
+    }
+
+    return warnings;
+  };
+
+  // Validate YAML (similar to Rule validation but adapted for stories)
+  const validateYAML = (): boolean => {
+    const newErrors: string[] = [];
+
+    // Only validate YAML if in expert mode or if yamlDefine has content
+    if (!yamlDefine.trim()) {
+      if (isExpertMode) {
+        newErrors.push(t("YAML definition is required"));
+      }
+      setYamlErrors(newErrors);
+      return !isExpertMode; // Return true if not in expert mode
+    }
+
+    const lines = yamlDefine.split("\n");
+
+    // Check if has story declaration
+    const storyLine = lines.find((line) => line.trim().startsWith("- story:"));
     if (!storyLine) {
       newErrors.push(t("YAML must contain '- story:' declaration"));
     } else {
+      // Extract story name from YAML
       const yamlStoryName = storyLine.split(":")[1]?.trim();
       const sanitizedName = toSnakeCase(name);
+
       if (yamlStoryName !== sanitizedName && !isExpertMode) {
         newErrors.push(
           t("Story name in YAML must match the name field") +
-            ` (expected: ${sanitizedName}, found: ${yamlStoryName})`
+          ` (expected: ${sanitizedName}, found: ${yamlStoryName})`
         );
       }
     }
 
-    const hasSteps = lines.some((line: string) => line.includes("steps:"));
-    if (!hasSteps) newErrors.push(t("YAML must contain 'steps:' field"));
+    // Check if has steps
+    const hasSteps = lines.some((line) => line.includes("steps:"));
+    if (!hasSteps) {
+      newErrors.push(t("YAML must contain 'steps:' field"));
+    }
 
-    const stepLines = lines.filter(
-      (line: string) =>
-        line.trim().startsWith("- intent:") ||
-        line.trim().startsWith("- action:")
+    // Validate step format
+    const stepLines = lines.filter(line =>
+      line.trim().startsWith("- intent:") || line.trim().startsWith("- action:")
     );
-    stepLines.forEach((line: string, index: number) => {
+
+    stepLines.forEach((line, index) => {
       if (!line.match(/\[([^\]]+)\]/)) {
         newErrors.push(
-          t("Step must contain ID in brackets") +
-            ` (line ${index + 1}): ${line.trim()}`
+          t("Step must contain ID in brackets") + ` (line ${index + 1}): ${line.trim()}`
         );
       }
     });
 
+    // Validate step sequence logic (only in visual mode where we have storySteps)
     if (!isExpertMode && storySteps.length > 0) {
       const sequenceErrors = validateStepSequence(storySteps);
       newErrors.push(...sequenceErrors);
@@ -624,659 +760,666 @@ export function StoryForm({
     return newErrors.length === 0;
   };
 
-  // Keep validateYAML referenced so linters/ts don't mark it as unused.
-  useEffect(() => {
-    // When yamlDefine changes in expert mode, validate it (non-blocking)
-    if (isExpertMode) {
-      // run async validation inline
-      (async () => {
-        validateYAML();
-      })();
+  // Validation
+  const validateForm = (): boolean => {
+    const newErrors: string[] = [];
+
+    if (!isExpertMode && !name.trim()) {
+      newErrors.push(t("Story name is required"));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [yamlDefine, isExpertMode]);
 
-  // Parse steps from YAML define
-  const parseStepsFromDefine = async (
-    yamlDefine: string
-  ): Promise<StoryStep[]> => {
-    const steps: StoryStep[] = [];
-    const lines = yamlDefine.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-
-      // Look for step lines with intent or action
-      if (line.includes("- intent:") || line.includes("- action:")) {
-        // Extract ID from brackets [id]
-        const match = line.match(/\[([^\]]+)\]/);
-        if (match) {
-          const id = match[1];
-
-          if (line.includes("- intent:")) {
-            // Fetch real name for intent ID
-            const intentName = await fetchNameForId(id, "intent");
-            const stepData: IIntent = {
-              _id: id,
-              name: intentName,
-            } as IIntent;
-
-            steps.push({
-              id: `intent_${id}_${i}`,
-              type: "intent",
-              data: stepData,
-            });
-          } else if (line.includes("- action:")) {
-            // Could be action or response, check both arrays
-            // Check if ID is in actions array
-            const isInActions = initialStory?.action?.some(
-              (item: IAction | string) =>
-                (typeof item === "string" ? item : item._id) === id
-            );
-
-            if (isInActions) {
-              // Fetch real name for action ID
-              const actionName = await fetchNameForId(id, "action");
-              const stepData: IAction = {
-                _id: id,
-                name: actionName,
-              } as IAction;
-
-              steps.push({
-                id: `action_${id}_${i}`,
-                type: "action",
-                data: stepData,
-              });
-            } else {
-              // Check if ID is in responses array
-              const isInResponses = initialStory?.responses?.some(
-                (item: IMyResponse | string) =>
-                  (typeof item === "string" ? item : item._id) === id
-              );
-
-              if (isInResponses) {
-                // Fetch real name for response ID
-                const responseName = await fetchNameForId(id, "response");
-                const stepData: IMyResponse = {
-                  _id: id,
-                  name: responseName,
-                } as IMyResponse;
-
-                steps.push({
-                  id: `response_${id}_${i}`,
-                  type: "response",
-                  data: stepData,
-                });
-              }
-            }
-          }
+    if (isExpertMode) {
+      if (!yamlDefine.trim()) {
+        newErrors.push(t("YAML definition is required"));
+      } else {
+        // Basic YAML validation
+        if (!yamlDefine.includes('- story:')) {
+          newErrors.push(t("YAML must contain a story definition"));
         }
+      }
+    } else {
+      if (storySteps.length === 0) {
+        newErrors.push(t("At least one step is required"));
+      } else {
+        // Validate step sequence in visual mode
+        const sequenceErrors = validateStepSequence(storySteps);
+        newErrors.push(...sequenceErrors);
       }
     }
 
-    return steps;
+    setErrors(newErrors);
+    return newErrors.length === 0;
   };
 
-  // Initialize with existing story data
-  useEffect(() => {
-    const initializeSteps = async () => {
-      if (initialStory) {
-        // Parse steps from YAML define to maintain correct order
-        if (initialStory.define) {
-          try {
-            const steps = await parseStepsFromDefine(initialStory.define);
-            setStorySteps(steps);
-            setYamlDefine(initialStory.define);
+  // Submit form
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
 
-            // Extract story name from YAML define if available (only if name field is empty)
-            if (!name) {
-              const yamlLines = initialStory.define.split("\n");
-              const storyNameLine = yamlLines.find((line: string) =>
-                line.trim().startsWith("- story:")
-              );
-              if (storyNameLine) {
-                const yamlStoryName = storyNameLine
-                  .split("- story:")[1]
-                  ?.trim();
-                if (yamlStoryName) {
-                  // Convert snake_case back to readable form for display
-                  const displayName = yamlStoryName
-                    .replace(/_/g, " ")
-                    .toUpperCase();
-                  setName(displayName);
-                }
-              }
+    // Validate YAML before submitting (only in expert mode)
+    if (isExpertMode && !validateYAML()) {
+      toast.error(t("Please fix YAML errors before submitting"));
+      return;
+    }
+
+    try {
+      const finalYaml = isExpertMode ? yamlDefine : generateYamlFromSteps();
+
+      // Extract IDs from steps or YAML
+      const intentIds: string[] = [];
+      const actionIds: string[] = [];
+      const responseIds: string[] = [];
+
+      if (isExpertMode) {
+        // Parse YAML to extract IDs
+        const lines = finalYaml.split('\n');
+        lines.forEach(line => {
+          const match = line.match(/\[([^\]]+)\]/);
+          if (match) {
+            const id = match[1];
+            if (line.includes('- intent:')) {
+              intentIds.push(id);
+            } else if (line.includes('- action:')) {
+              // For expert mode, we'll put all actions in actionIds
+              actionIds.push(id);
             }
-          } catch (error) {
-            console.error("Error parsing steps from YAML:", error);
-            // Fallback to empty steps
-            setStorySteps([]);
-            generateYamlDefine([]);
           }
-        } else {
-          // Fallback: if no define, create from arrays (shouldn't happen in edit mode)
-          setStorySteps([]);
-          generateYamlDefine([]);
-        }
+        });
+      } else {
+        // Extract from visual steps
+        storySteps.forEach(step => {
+          switch (step.type) {
+            case 'intent':
+              intentIds.push(step.data._id);
+              break;
+            case 'action':
+              actionIds.push(step.data._id);
+              break;
+            case 'response':
+              responseIds.push(step.data._id);
+              break;
+          }
+        });
       }
-    };
 
-    initializeSteps();
-  }, [initialStory]);
+      const storyData = {
+        name: name.trim(),
+        description: description.trim(),
+        define: finalYaml,
+        intents: intentIds,
+        action: actionIds, // Note: interface uses 'action' not 'actions'
+        responses: responseIds,
+        entities: [], // Pass empty array as user specified
+        slots: [], // Pass empty array as user specified
+        roles: []
+      };
+
+      await onSubmit(storyData);
+    } catch (error) {
+      console.error("Error submitting story:", error);
+      toast.error(t("Failed to save story"));
+    }
+  };
 
   return (
-    <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSubmit();
-        }}
-        className="space-y-6"
-      >
-        {/* Error Display */}
-        {errors.length > 0 && (
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
-            <div className="flex items-start gap-2">
-              <div>
-                <h3 className="font-medium text-destructive mb-1">
-                  {t("Please fix the following errors:")}
-                </h3>
-                <ul className="text-sm text-destructive/90 space-y-1">
-                  {errors.map((error, index) => (
-                    <li key={index}>• {error}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="space-y-6">
+      {/* Mode Toggle */}
+      <div className="flex items-center space-x-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <Switch
+          id="expert-mode"
+          checked={isExpertMode}
+          onCheckedChange={setIsExpertMode}
+        />
+        <Label htmlFor="expert-mode" className="flex items-center gap-2">
+          <FileCode className="h-4 w-4" />
+          {t("Expert Mode (YAML)")}
+        </Label>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowHelp(true)}
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
+      </div>
 
-        {/* Basic Information */}
-        <div className="space-y-4">
-          <div>
-            <Label>{t("Story Name")} *</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t("Enter story name")}
-            />
-          </div>
-
-          <div>
-            <Label>{t("Description")}</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t("Enter story description (optional)")}
-              className="min-h-20"
-            />
-          </div>
+      {/* Basic Information */}
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="story-name">{t("Story Name")} *</Label>
+          <Input
+            id="story-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("Enter story name")}
+            className="mt-1"
+          />
         </div>
 
-        {/* Story Definition */}
+        <div>
+          <Label htmlFor="story-description">{t("Description")}</Label>
+          <Textarea
+            id="story-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t("Enter story description")}
+            className="mt-1"
+            rows={3}
+          />
+        </div>
+      </div>
+
+      {/* Expert Mode - YAML Editor */}
+      {isExpertMode ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{t("Story Definition")}</h2>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant={!isExpertMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsExpertMode(false)}
-              >
-                <FormInput className="h-4 w-4 mr-2" />
-                {t("Normal Mode")}
-              </Button>
-              <Button
-                type="button"
-                variant={isExpertMode ? "default" : "outline"}
-                size="sm"
-                onClick={() => setIsExpertMode(true)}
-              >
-                <Code2 className="h-4 w-4 mr-2" />
-                {t("Expert Mode")}
-              </Button>
-            </div>
-          </div>
+          <Label htmlFor="yaml-define">{t("YAML Definition")} *</Label>
+          <Textarea
+            ref={textareaRef}
+            id="yaml-define"
+            value={yamlDefine}
+            onChange={(e) => setYamlDefine(e.target.value)}
+            onBlur={validateYAML}
+            placeholder={t("Enter YAML definition for the story")}
+            className="font-mono text-sm"
+            rows={15}
+          />
 
-          {!isExpertMode ? (
-            // Normal Mode
-            <div className="space-y-4">
-              {/* Steps */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <Label>{t("Steps")}</Label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIntentDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      {t("Add Intent")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setActionDialogOpen(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      {t("Add Action")}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  {storySteps.map((step, index) => {
-                    const sequenceErrors = validateStepSequence(storySteps);
-                    const hasError = sequenceErrors.some((err) =>
-                      err.includes(`step ${index + 1}`)
-                    );
-                    const isBeingDragged = draggedIndex === index;
-                    const isDropTarget = dropZoneIndex === index;
-
-                    return (
-                      <div key={step.id}>
-                        {draggedIndex !== null &&
-                          draggedIndex !== index &&
-                          isDropTarget && (
-                            <div className="h-0.5 bg-blue-500 rounded-full mb-2 shadow-sm"></div>
-                          )}
-
-                        <div
-                          className={`flex items-center gap-2 p-2 border rounded-md cursor-move transition-all duration-200 ${
-                            isBeingDragged
-                              ? "opacity-30 scale-95 shadow-lg border-blue-300"
-                              : isDropTarget && draggedIndex !== null
-                              ? "bg-blue-50 border-blue-400 border-2 shadow-md"
-                              : hasError
-                              ? "bg-red-50 border-red-200 hover:shadow-sm"
-                              : "bg-muted/50 hover:shadow-sm"
-                          }`}
-                          draggable={!isBeingDragged}
-                          onDragStart={(e) => handleDragStart(e, index)}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragEnter={(e) => handleDragEnter(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          onDragEnd={handleDragEnd}
-                        >
-                          <GripVertical
-                            className={`h-4 w-4 flex-shrink-0 ${
-                              isBeingDragged
-                                ? "text-blue-500"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                          <div className="flex items-center gap-2 flex-1">
-                            <Badge
-                              variant={
-                                step.type === "intent"
-                                  ? "default"
-                                  : step.type === "action"
-                                  ? "secondary"
-                                  : "outline"
-                              }
-                            >
-                              {step.type === "intent"
-                                ? "Intent"
-                                : step.type === "action"
-                                ? "Action"
-                                : "Response"}
-                            </Badge>
-                            <span className="flex-1 text-sm">
-                              {(step.data as any).name ||
-                                `${
-                                  step.type === "intent"
-                                    ? "Intent"
-                                    : step.type === "action"
-                                    ? "Action"
-                                    : "Response"
-                                } ...${(step.data as any)._id?.slice(-6)}`}
-                            </span>
-                            {hasError && (
-                              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-                            )}
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeStep(step.id)}
-                            disabled={isBeingDragged}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {storySteps.length === 0 && (
-                    <div className="text-center text-muted-foreground py-4">
-                      {t(
-                        "No steps added yet. Click 'Add Intent' or 'Add Action' to start building your story."
-                      )}
-                    </div>
-                  )}
-
-                  {/* Drop zone at the end for appending */}
-                  {draggedIndex !== null && (
-                    <div
-                      className="mt-2"
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        if (dropZoneIndex !== storySteps.length)
-                          setDropZoneIndex(storySteps.length);
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        if (draggedIndex !== null) {
-                          const newSteps = [...storySteps];
-                          const draggedStep = newSteps.splice(
-                            draggedIndex,
-                            1
-                          )[0];
-                          newSteps.push(draggedStep);
-
-                          setStorySteps(newSteps);
-                          generateYamlDefine(newSteps);
-                          setDraggedIndex(null);
-                          setDropZoneIndex(null);
-
-                          toast.success(t("Step moved to end"));
-                        }
-                      }}
-                    >
-                      {dropZoneIndex === storySteps.length && (
-                        <div className="h-0.5 bg-blue-500 rounded-full shadow-sm mb-2"></div>
-                      )}
-                      <div className="h-6 border-2 border-dashed border-blue-300 rounded-md bg-blue-50 flex items-center justify-center transition-all duration-200 hover:border-blue-400 hover:bg-blue-100">
-                        <span className="text-xs text-blue-600 font-medium">
-                          {t("Drop here to move to end")}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Preview */}
-              <div className="space-y-2">
-                <Label>{t("Preview")}</Label>
-                <div className="bg-muted p-4 rounded-lg">
-                  <pre className="text-sm font-mono whitespace-pre-wrap">
-                    {yamlDefine}
-                  </pre>
-                </div>
-              </div>
-            </div>
-          ) : (
-            // Expert Mode
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>{t("YAML Definition")} *</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateTemplate}
-                >
-                  <FileCode className="h-4 w-4 mr-2" />
-                  {t("Generate Template")}
-                </Button>
-              </div>
-              <Textarea
-                ref={textareaRef}
-                value={yamlDefine}
-                onChange={(e) => setYamlDefine(e.target.value)}
-                placeholder={t("Enter YAML story definition...")}
-                className="font-mono text-sm min-h-60"
-              />
-              {yamlErrors.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {yamlErrors.map((err, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-2 text-red-600 text-xs"
-                    >
-                      <AlertCircle className="h-3 w-3" />
-                      {err}
-                    </div>
-                  ))}
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                {t(
-                  "Edit the YAML definition directly. Make sure to follow RASA stories format."
-                )}
-              </p>
-
-              {/* Expert Mode action buttons */}
-              <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIntentDialogOpen(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
+          {/* Expert Mode Helper Tools */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={generateTemplate}
+            >
+              {t("Generate Template")}
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
                   {t("Add Intent")}
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setActionDialogOpen(true)}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" />
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-2">
+                  <Input
+                    placeholder={t("Search intents...")}
+                    value={intentSearchQuery}
+                    onChange={(e) => {
+                      setIntentSearchQuery(e.target.value);
+                      searchIntents(e.target.value);
+                    }}
+                  />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {isSearchingIntents ? (
+                      <div className="text-center py-2 text-sm">{t("Searching...")}</div>
+                    ) : intentSearchResults.length > 0 ? (
+                      intentSearchResults.map((intent) => (
+                        <div
+                          key={intent._id}
+                          className="p-2 text-sm border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => insertIntentAtCursor(intent)}
+                        >
+                          {intent.name}
+                        </div>
+                      ))
+                    ) : intentSearchQuery ? (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("No intents found")}</div>
+                    ) : (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("Start typing to search")}</div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
                   {t("Add Action")}
                 </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-2">
+                  <Input
+                    placeholder={t("Search actions...")}
+                    value={actionSearchQuery}
+                    onChange={(e) => {
+                      setActionSearchQuery(e.target.value);
+                      searchActions(e.target.value);
+                    }}
+                  />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {isSearchingActions ? (
+                      <div className="text-center py-2 text-sm">{t("Searching...")}</div>
+                    ) : actionSearchResults.length > 0 ? (
+                      actionSearchResults.map((action) => (
+                        <div
+                          key={action._id}
+                          className="p-2 text-sm border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => insertActionAtCursor(action)}
+                        >
+                          {action.name}
+                        </div>
+                      ))
+                    ) : actionSearchQuery ? (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("No actions found")}</div>
+                    ) : (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("Start typing to search")}</div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  {t("Add Response")}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-2">
+                  <Input
+                    placeholder={t("Search responses...")}
+                    value={responseSearchQuery}
+                    onChange={(e) => {
+                      setResponseSearchQuery(e.target.value);
+                      searchResponses(e.target.value);
+                    }}
+                  />
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {isSearchingResponses ? (
+                      <div className="text-center py-2 text-sm">{t("Searching...")}</div>
+                    ) : responseSearchResults.length > 0 ? (
+                      responseSearchResults.map((response) => (
+                        <div
+                          key={response._id}
+                          className="p-2 text-sm border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => insertResponseAtCursor(response)}
+                        >
+                          {response.name}
+                        </div>
+                      ))
+                    ) : responseSearchQuery ? (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("No responses found")}</div>
+                    ) : (
+                      <div className="text-center py-2 text-sm text-gray-500">{t("Start typing to search")}</div>
+                    )}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Selected Items in Expert Mode */}
+          {/* Selected Intents */}
+          {selectedIntents.length > 0 && (
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block">{t("Selected Intents")}</Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
+                {selectedIntents.map((intent) => (
+                  <Badge
+                    key={intent._id}
+                    variant="secondary"
+                    className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() => insertIntentAtCursor(intent)}
+                    title={t("Click to insert ID at cursor position")}
+                  >
+                    <span>{intent.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedIntents(selectedIntents.filter(i => i._id !== intent._id));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Click on intent badges to insert their ID at cursor position")}
+              </p>
+            </div>
+          )}
 
-              {/* Selected badges for expert mode */}
-              {selectedIntents.length > 0 && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium mb-2 block">
-                    {t("Selected Intents")}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
-                    {selectedIntents.map((intent) => (
-                      <Badge
-                        key={intent._id}
-                        variant="secondary"
-                        className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
-                        onClick={() => insertIntentAtCursor(intent)}
-                        title={t("Click to insert ID at cursor position")}
-                      >
-                        <span>{intent.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedIntents(
-                              selectedIntents.filter(
-                                (i) => i._id !== intent._id
-                              )
-                            );
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t(
-                      "Click on intent badges to insert their ID at cursor position"
-                    )}
-                  </p>
-                </div>
-              )}
+          {/* Selected Actions */}
+          {selectedActions.length > 0 && (
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block">{t("Selected Actions")}</Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
+                {selectedActions.map((action) => (
+                  <Badge
+                    key={action._id}
+                    variant="secondary"
+                    className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() => insertActionAtCursor(action)}
+                    title={t("Click to insert ID at cursor position")}
+                  >
+                    <span>{action.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedActions(selectedActions.filter(a => a._id !== action._id));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Click on action badges to insert their ID at cursor position")}
+              </p>
+            </div>
+          )}
 
-              {selectedActions.length > 0 && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium mb-2 block">
-                    {t("Selected Actions")}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
-                    {selectedActions.map((action) => (
-                      <Badge
-                        key={action._id}
-                        variant="secondary"
-                        className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
-                        onClick={() => insertActionAtCursor(action)}
-                        title={t("Click to insert ID at cursor position")}
-                      >
-                        <span>{action.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedActions(
-                              selectedActions.filter(
-                                (a) => a._id !== action._id
-                              )
-                            );
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t(
-                      "Click on action badges to insert their ID at cursor position"
-                    )}
-                  </p>
-                </div>
-              )}
+          {/* Selected Responses */}
+          {selectedResponses.length > 0 && (
+            <div className="mt-4">
+              <Label className="text-sm font-medium mb-2 block">{t("Selected Responses")}</Label>
+              <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
+                {selectedResponses.map((response) => (
+                  <Badge
+                    key={response._id}
+                    variant="secondary"
+                    className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+                    onClick={() => insertResponseAtCursor(response)}
+                    title={t("Click to insert ID at cursor position")}
+                  >
+                    <span>{response.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedResponses(selectedResponses.filter(r => r._id !== response._id));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {t("Click on response badges to insert their ID at cursor position")}
+              </p>
+            </div>
+          )}
 
-              {selectedResponses.length > 0 && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium mb-2 block">
-                    {t("Selected Responses")}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
-                    {selectedResponses.map((response) => (
-                      <Badge
-                        key={response._id}
-                        variant="secondary"
-                        className="gap-2 pr-1 cursor-pointer hover:bg-secondary/80 transition-colors"
-                        onClick={() => insertResponseAtCursor(response)}
-                        title={t("Click to insert ID at cursor position")}
-                      >
-                        <span>{response.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-4 w-4 p-0 hover:bg-transparent"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedResponses(
-                              selectedResponses.filter(
-                                (r) => r._id !== response._id
-                              )
-                            );
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {t(
-                      "Click on response badges to insert their ID at cursor position"
-                    )}
-                  </p>
+          {yamlErrors.length > 0 && (
+            <div className="space-y-1">
+              {yamlErrors.map((error, index) => (
+                <div key={index} className="flex items-center gap-2 text-red-600 text-sm">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
+      ) : (
+        /* Visual Mode - Step Builder */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label>{t("Story Steps")}</Label>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIntentDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {t("Intent")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setActionDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                {t("Action/Response")}
+              </Button>
+            </div>
+          </div>
 
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <Button type="button" variant="outline" onClick={onCancel}>
-              {t("Cancel")}
-            </Button>
+          {/* Validation Guidelines for Stories */}
+          {storySteps.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                {t("Drag and drop steps to reorder them. Stories represent typical conversation flows.")}
+              </p>
+              <p className="text-xs text-blue-600">
+                {t("Stories are flexible: Intent → Response, Intent → Action → Response, etc. are all valid patterns.")}
+              </p>
+            </div>
           )}
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? t("Saving...") : submitButtonText}
-          </Button>
-        </div>
-      </form>
 
-      {/* Intent Dialog */}
+          {/* Steps List */}
+          <div className="space-y-2 min-h-[200px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4">
+            {storySteps.length === 0 ? (
+              <div className="text-center text-gray-500 py-8">
+                {t("No steps added yet. Click the buttons above to add intents or actions.")}
+              </div>
+            ) : (
+              storySteps.map((step, index) => {
+                // Check if this specific step has validation issues
+                const sequenceErrors = validateStepSequence(storySteps);
+                const hasError = sequenceErrors.some(error => error.includes(`step ${index + 1}`));
+                const isBeingDragged = draggedIndex === index;
+                const isDropTarget = dropZoneIndex === index;
+
+                return (
+                  <div key={step.id}>
+                    {/* Drop line indicator above current item */}
+                    {draggedIndex !== null && draggedIndex !== index && isDropTarget && (
+                      <div className="h-0.5 bg-blue-500 rounded-full mb-2 shadow-sm"></div>
+                    )}
+
+                    {/* Step item */}
+                    <div
+                      draggable={!isBeingDragged}
+                      onDragStart={() => handleDragStart(index)}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        handleDragOver(index);
+                      }}
+                      onDragEnter={() => handleDragEnter(index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={() => handleDrop(index)}
+                      onDragEnd={handleDragEnd}
+                      className={`
+                        flex items-center gap-3 p-3 border rounded-lg cursor-move transition-all duration-200
+                        ${isBeingDragged
+                          ? 'opacity-30 scale-95 shadow-lg border-blue-300 bg-white dark:bg-gray-800'
+                          : isDropTarget && draggedIndex !== null
+                            ? 'bg-blue-50 border-blue-400 border-2 shadow-md dark:bg-blue-900/20'
+                            : hasError
+                              ? 'bg-red-50 border-red-200 hover:shadow-sm dark:bg-red-900/20 dark:border-red-800'
+                              : 'bg-white dark:bg-gray-800 hover:shadow-sm'
+                        }
+                      `}
+                    >
+                      <GripVertical className={`h-4 w-4 ${isBeingDragged ? 'text-blue-500' : 'text-gray-400'}`} />
+                      <div className="flex-1 flex items-center gap-2">
+                        <Badge variant={
+                          step.type === 'intent' ? 'default' :
+                            step.type === 'action' ? 'secondary' : 'outline'
+                        }>
+                          {step.type}
+                        </Badge>
+                        <span className="font-medium">{step.data.name}</span>
+                        {hasError && (
+                          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeStep(step.id)}
+                        disabled={isBeingDragged}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {/* Drop zone at the end for appending */}
+            {draggedIndex !== null && storySteps.length > 0 && (
+              <div
+                className="mt-2"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dropZoneIndex !== storySteps.length) {
+                    setDropZoneIndex(storySteps.length);
+                  }
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedIndex !== null) {
+                    const newSteps = [...storySteps];
+                    const draggedStep = newSteps.splice(draggedIndex, 1)[0];
+                    newSteps.push(draggedStep);
+
+                    setStorySteps(newSteps);
+                    setDraggedIndex(null);
+                    setDropZoneIndex(null);
+                  }
+                }}
+              >
+                {/* Blue line indicator for end drop */}
+                {dropZoneIndex === storySteps.length && (
+                  <div className="h-0.5 bg-blue-500 rounded-full shadow-sm mb-2"></div>
+                )}
+
+                <div className="h-6 border-2 border-dashed border-blue-300 rounded-md bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center transition-all duration-200 hover:border-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30">
+                  <span className="text-xs text-blue-600 font-medium">
+                    {t("Drop here to move to end")}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* YAML Preview for Visual Mode */}
+          {storySteps.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t("YAML Preview")}</Label>
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-md p-4">
+                <pre className="font-mono text-sm whitespace-pre-wrap">
+                  {generateYamlFromSteps()}
+                </pre>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Errors */}
+      {errors.length > 0 && (
+        <div className="space-y-2">
+          {errors.map((error, index) => (
+            <div key={index} className="flex items-center gap-2 text-red-600 text-sm">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Validation Errors */}
+      {errors.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-red-600">{t("Validation Errors")}</Label>
+          {errors.map((error, index) => (
+            <div key={index} className="text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* YAML Errors */}
+      {yamlErrors.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-red-600">{t("YAML Errors")}</Label>
+          {yamlErrors.map((error, index) => (
+            <div key={index} className="text-red-600 text-sm flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              {error}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {t("Cancel")}
+        </Button>
+        <Button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? t("Saving...") : submitButtonText}
+        </Button>
+      </div>
+
+      {/* Intent Selection Dialog */}
       <Dialog open={intentDialogOpen} onOpenChange={setIntentDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md max-h-[70vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("Select Intent")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                placeholder={t("Search intents...")}
-                value={intentSearchQuery}
-                onChange={(e) => setIntentSearchQuery(e.target.value)}
-                className="flex-1"
-              />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="intent-deleted"
-                        checked={intentFilterDeleted}
-                        onCheckedChange={(checked) =>
-                          setIntentFilterDeleted(checked === true)
-                        }
-                      />
-                      <Label htmlFor="intent-deleted" className="text-sm">
-                        {t("Include deleted intents")}
-                      </Label>
+            <Input
+              placeholder={t("Search intents...")}
+              value={intentSearchQuery}
+              onChange={(e) => {
+                setIntentSearchQuery(e.target.value);
+                searchIntents(e.target.value);
+              }}
+            />
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {isSearchingIntents ? (
+                <div className="text-center py-4">{t("Searching...")}</div>
+              ) : intentSearchResults.length > 0 ? (
+                intentSearchResults.map((intent) => (
+                  <div
+                    key={intent._id}
+                    className="flex items-center justify-between p-2 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                    onClick={() => addIntentStep(intent)}
+                  >
+                    <div>
+                      <div className="font-medium">{intent.name}</div>
+                      {intent.description && (
+                        <div className="text-sm text-gray-500">{intent.description}</div>
+                      )}
                     </div>
                   </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="max-h-60 overflow-y-auto border rounded-md">
-              {intentSearchResults.map((intent) => (
-                <div
-                  key={intent._id}
-                  className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
-                  onClick={() => handleSelectIntent(intent)}
-                >
-                  <p className="font-medium">{intent.name}</p>
-                  {intent.description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {intent.description}
-                    </p>
-                  )}
+                ))
+              ) : intentSearchQuery ? (
+                <div className="text-center py-4 text-gray-500">
+                  {t("No intents found")}
                 </div>
-              ))}
-              {intentSearchQuery &&
-                intentSearchResults.length === 0 &&
-                !isSearchingIntents && (
-                  <div className="p-4 text-center text-muted-foreground">
-                    No intents found
-                  </div>
-                )}
-              {isSearchingIntents && (
-                <div className="p-4 text-center text-muted-foreground">
-                  Searching...
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  {t("Start typing to search intents")}
                 </div>
               )}
             </div>
@@ -1284,145 +1427,86 @@ export function StoryForm({
         </DialogContent>
       </Dialog>
 
-      {/* Action/Response Dialog */}
+      {/* Action/Response Selection Dialog */}
       <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl max-h-[70vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle>{t("Select Action or Response")}</DialogTitle>
           </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Actions */}
             <div className="space-y-4">
-              <Label className="text-lg font-medium">
-                {t("Custom Actions")}
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder={t("Search custom actions...")}
-                  value={actionSearchQuery}
-                  onChange={(e) => setActionSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <SlidersHorizontal className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="action-deleted"
-                          checked={actionFilterDeleted}
-                          onCheckedChange={(checked) =>
-                            setActionFilterDeleted(checked === true)
-                          }
-                        />
-                        <Label htmlFor="action-deleted" className="text-sm">
-                          {t("Include deleted actions")}
-                        </Label>
-                      </div>
+              <h3 className="font-medium">{t("Actions")}</h3>
+              <Input
+                placeholder={t("Search actions...")}
+                value={actionSearchQuery}
+                onChange={(e) => {
+                  setActionSearchQuery(e.target.value);
+                  searchActions(e.target.value);
+                }}
+              />
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {isSearchingActions ? (
+                  <div className="text-center py-4">{t("Searching...")}</div>
+                ) : actionSearchResults.length > 0 ? (
+                  actionSearchResults.map((action) => (
+                    <div
+                      key={action._id}
+                      className="p-2 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => addActionStep(action)}
+                    >
+                      <div className="font-medium">{action.name}</div>
+                      {action.description && (
+                        <div className="text-sm text-gray-500">{action.description}</div>
+                      )}
                     </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="max-h-60 overflow-y-auto border rounded-md">
-                {actionSearchResults.map((action) => (
-                  <div
-                    key={action._id}
-                    className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
-                    onClick={() => handleSelectAction(action)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Action</Badge>
-                      <p className="font-medium">{action.name}</p>
-                    </div>
-                    {action.description && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {action.description}
-                      </p>
-                    )}
+                  ))
+                ) : actionSearchQuery ? (
+                  <div className="text-center py-4 text-gray-500">
+                    {t("No actions found")}
                   </div>
-                ))}
-                {actionSearchQuery &&
-                  actionSearchResults.length === 0 &&
-                  !isSearchingActions && (
-                    <div className="p-4 text-center text-muted-foreground">
-                      No custom actions found
-                    </div>
-                  )}
-                {isSearchingActions && (
-                  <div className="p-4 text-center text-muted-foreground">
-                    Searching...
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    {t("Start typing to search actions")}
                   </div>
                 )}
               </div>
             </div>
 
+            {/* Responses */}
             <div className="space-y-4">
-              <Label className="text-lg font-medium">
-                {t("Response Actions")}
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  placeholder={t("Search responses...")}
-                  value={responseSearchQuery}
-                  onChange={(e) => setResponseSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <SlidersHorizontal className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="response-deleted"
-                          checked={responseFilterDeleted}
-                          onCheckedChange={(checked) =>
-                            setResponseFilterDeleted(checked === true)
-                          }
-                        />
-                        <Label htmlFor="response-deleted" className="text-sm">
-                          {t("Include deleted responses")}
-                        </Label>
-                      </div>
+              <h3 className="font-medium">{t("Responses")}</h3>
+              <Input
+                placeholder={t("Search responses...")}
+                value={responseSearchQuery}
+                onChange={(e) => {
+                  setResponseSearchQuery(e.target.value);
+                  searchResponses(e.target.value);
+                }}
+              />
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {isSearchingResponses ? (
+                  <div className="text-center py-4">{t("Searching...")}</div>
+                ) : responseSearchResults.length > 0 ? (
+                  responseSearchResults.map((response) => (
+                    <div
+                      key={response._id}
+                      className="p-2 border rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                      onClick={() => addResponseStep(response)}
+                    >
+                      <div className="font-medium">{response.name}</div>
+                      {response.description && (
+                        <div className="text-sm text-gray-500">{response.description}</div>
+                      )}
                     </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="max-h-60 overflow-y-auto border rounded-md">
-                {responseSearchResults.map((response) => (
-                  <div
-                    key={response._id}
-                    className="p-3 hover:bg-muted cursor-pointer border-b last:border-b-0"
-                    onClick={() => handleSelectResponse(response)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">Response</Badge>
-                      <p className="font-medium">{response.name}</p>
-                    </div>
-                    {response.description && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {response.description}
-                      </p>
-                    )}
+                  ))
+                ) : responseSearchQuery ? (
+                  <div className="text-center py-4 text-gray-500">
+                    {t("No responses found")}
                   </div>
-                ))}
-                {responseSearchQuery &&
-                  responseSearchResults.length === 0 &&
-                  !isSearchingResponses && (
-                    <div className="p-4 text-center text-muted-foreground">
-                      No responses found
-                    </div>
-                  )}
-                {isSearchingResponses && (
-                  <div className="p-4 text-center text-muted-foreground">
-                    Searching...
+                ) : (
+                  <div className="text-center py-4 text-gray-500">
+                    {t("Start typing to search responses")}
                   </div>
                 )}
               </div>
@@ -1431,56 +1515,28 @@ export function StoryForm({
         </DialogContent>
       </Dialog>
 
-      {/* Help Button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg bg-blue-600 text-white hover:bg-blue-700 hover:text-white z-50"
-        onClick={() => setShowHelp(true)}
-        title={t("Help & Guide")}
-      >
-        <HelpCircle className="h-6 w-6" />
-      </Button>
-
-      {/* Help Modal */}
-      {showHelp && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowHelp(false)}
-        >
-          <div
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b p-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-blue-600" />
-                {t("Story Guide")}
-              </h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowHelp(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+      {/* Help Dialog */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t("Story Form Help")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-sm">
+            <div>
+              <h4 className="font-medium">{t("Visual Mode")}</h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                {t("Build your story step by step by adding intents and actions. Drag and drop to reorder steps.")}
+              </p>
             </div>
-
-            <div className="p-6 space-y-6">
-              <section>
-                <h3 className="text-lg font-semibold mb-3 text-blue-600">
-                  📌 {t("What is a Story?")}
-                </h3>
-                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                  {t(
-                    "A Story defines a conversation flow used by your assistant to train conversational behavior."
-                  )}
-                </p>
-              </section>
+            <div>
+              <h4 className="font-medium">{t("Expert Mode")}</h4>
+              <p className="text-gray-600 dark:text-gray-400">
+                {t("Write YAML directly. Use [ID] format for referencing intents, actions, and responses.")}
+              </p>
             </div>
           </div>
-        </div>
-      )}
-    </>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

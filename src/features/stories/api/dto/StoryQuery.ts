@@ -1,6 +1,3 @@
-
-
-
 export interface StoryQuery {
   page?: number;
   limit?: number;

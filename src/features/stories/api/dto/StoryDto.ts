@@ -30,6 +30,6 @@ export interface CreateStoryRequest {
   roles: string[];
 }
 
-export interface UpdateStoryRequest extends Omit<CreateStoryRequest, '_id'> {
+export interface UpdateStoryRequest extends CreateStoryRequest {
   _id: string;
 }
