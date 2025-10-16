@@ -27,6 +27,7 @@ import { UQuestionManagement } from "@/features/uquestion/pages/UQuestionManagem
 import { StoryManagementPage } from "@/features/stories/pages/StoryManagementPage";
 import { EditStoryPage } from "@/features/stories/pages/EditStoryPage";
 import { CreateStoryPage } from "@/features/stories/pages/CreateStoryPage";
+import { TrainingManagementPage } from "@/features/training";
 
 const router = createBrowserRouter([
   {
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
           { path: "edit", element: <EditStoryPage /> },
         ],
       },
+      { path: "training", element: <TrainingManagementPage /> },
     ],
   },
   {
