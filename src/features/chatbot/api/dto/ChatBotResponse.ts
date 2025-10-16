@@ -25,7 +25,7 @@ export interface ListChatBotResponse {
   };
 }
 
-export interface ChatBotDetailResponse extends ChatBot {}
+export type ChatBotDetailResponse = ChatBot;
 
 export interface ModelDetail {
   _id: string;
@@ -37,9 +37,9 @@ export interface ModelDetail {
 }
 
 export interface ModelsListResponse {
-  models: string[]; // models in Rasa
+  models: string[];
   total: number;
-  details: ModelDetail[]; // models in MongoDB
+  details?: ModelDetail[];
 }
 
 export interface ActionsListResponse {
@@ -69,22 +69,23 @@ export interface HealthCheckResponse {
 export interface SendModelResponse {
   success: boolean;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface RunModelResponse {
   success: boolean;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface PushActionResponse {
   success: boolean;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
+
 export interface RunActionResponse {
   success: boolean;
   message: string;
-  data?: any;
+  data?: unknown;
 }

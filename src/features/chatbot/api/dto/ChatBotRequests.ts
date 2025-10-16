@@ -26,14 +26,14 @@ export interface UpdateChatBotRequest {
 }
 
 export interface SendModelRequest {
-  modelId: string;  // ID của model trong MongoDB
+  modelId: string;
 }
 
 export interface RunModelRequest {
-  modelName: string;  // Tên file model từ Rasa
+  modelName: string;
 }
 
 export interface PushActionRequest {
-  modelId?: string;      // Optional: ID của model trong MongoDB
-  actionIds?: string[];  // Optional: Danh sách action IDs cần push
+  modelId?: string;
+  actionIds?: string[];
 }

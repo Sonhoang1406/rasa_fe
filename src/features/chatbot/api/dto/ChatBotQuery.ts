@@ -1,12 +1,4 @@
-export interface ChatBotQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
-  deleted?: boolean;
-  sort?: string;
-  startDate?: string;
-  endDate?: string;
-}
+import { ChatBotQuery } from "./ChatBotRequests";
 
 export function createChatBotQuery(query: ChatBotQuery): string {
   const params = new URLSearchParams();

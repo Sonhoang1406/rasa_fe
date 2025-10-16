@@ -22,7 +22,7 @@ import {
   PushActionRequest,
   ChatBotQuery 
 } from "./dto/ChatBotRequests";
-import createChatBotQuery from "./dto/ChatBotQuery";
+import { createChatBotQuery } from "./dto/ChatBotQuery";
 
 export const chatBotService = {
   fetchChatBots: async (query: ChatBotQuery): Promise<ListChatBotResponse> => {
@@ -57,7 +57,6 @@ export const chatBotService = {
     await axiosInstance.patch(ENDPOINTS.CHATBOT_ENDPOINTS.RESTORE(id));
   },
 
-  // Additional operations from backend
   getModelsList: async (id: string): Promise<ModelsListResponse> => {
     const response = await axiosInstance.get(ENDPOINTS.CHATBOT_ENDPOINTS.GET_MODELS_LIST(id));
     return response.data.data;
@@ -89,7 +88,7 @@ export const chatBotService = {
   },
 };
 
-// ✅ My Model Service
+// My Model Service
 interface MyModelQuery {
   page?: number;
   limit?: number;
