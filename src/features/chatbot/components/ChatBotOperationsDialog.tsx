@@ -60,12 +60,12 @@ export function ChatBotOperationsDialog({
   const [actionsList, setActionsList] = useState<ActionsListResponse["actions"]>([]);
   const [actionsLoading, setActionsLoading] = useState(false);
 
-  // Send Model
-  const [selectedModelId, setSelectedModelId] = useState("");
+  // Send Model (share to another chatbot)
+  const [selectedModelName, setSelectedModelName] = useState("");
   const [sendModelLoading, setSendModelLoading] = useState(false);
 
-  // Run Model
-  const [selectedModelName, setSelectedModelName] = useState("");
+  // Run Model (activate in current chatbot)
+  const [selectedRunModelName, setSelectedRunModelName] = useState("");
   const [runModelLoading, setRunModelLoading] = useState(false);
 
   // Push Action
@@ -130,29 +130,27 @@ export function ChatBotOperationsDialog({
   };
 
   const handleSendModel = async () => {
-    if (!chatBot || !selectedModelId) return;
+    if (!chatBot || !selectedModelName) return;
     setSendModelLoading(true);
     try {
-      await chatBotService.sendModel(chatBot._id, { modelId: selectedModelId });
-      toast.success(t("Model uploaded from MinIO to Rasa successfully"));
-      setSelectedModelId("");
-      // Refresh models list after sending
-      handleGetModelsList();
+      await chatBotService.sendModel(chatBot._id, { modelName: selectedModelName });
+      toast.success(t("Model sent to another chatbot successfully"));
+      setSelectedModelName("");
     } catch (error) {
       console.error("Send model error:", error);
-      toast.error(t("Failed to send model to Rasa"));
+      toast.error(t("Failed to send model to another chatbot"));
     } finally {
       setSendModelLoading(false);
     }
   };
 
   const handleRunModel = async () => {
-    if (!chatBot || !selectedModelName) return;
+    if (!chatBot || !selectedRunModelName) return;
     setRunModelLoading(true);
     try {
-      await chatBotService.runModel(chatBot._id, { modelName: selectedModelName });
+      await chatBotService.runModel(chatBot._id, { modelName: selectedRunModelName });
       toast.success(t("Model activated in Rasa successfully"));
-      setSelectedModelName("");
+      setSelectedRunModelName("");
     } catch (error) {
       console.error("Run model error:", error);
       toast.error(t("Failed to activate model in Rasa"));
@@ -355,69 +353,63 @@ export function ChatBotOperationsDialog({
               </div>
 
               <div className="border-t pt-4 space-y-4">
-                {/* Send Model - Upload from MinIO to Rasa */}
+                {/* Send Model - Share model to another chatbot */}
                 <div className="space-y-2">
                   <Label htmlFor="modelId" className="flex items-center gap-2">
                     <Send className="h-4 w-4" />
-                    {t("Send Model to Rasa")}
+                    {t("Send Model to Another ChatBot")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    {t("Upload trained model from MinIO storage to Rasa server")}
+                    {t("Share a trained model from this Rasa server to another chatbot's Rasa server")}
                   </p>
                   <div className="flex gap-2">
                     <Select
-                      value={selectedModelId}
-                      onValueChange={setSelectedModelId}
-                      disabled={modelsDetails.length === 0}
+                      value={selectedModelName}
+                      onValueChange={setSelectedModelName}
+                      disabled={modelsList.length === 0}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder={
-                          modelsDetails.length === 0 
-                            ? t("No models in MinIO storage") 
-                            : t("Select model from MinIO")
+                          modelsList.length === 0 
+                            ? t("Get models list first") 
+                            : t("Select model to send")
                         } />
                       </SelectTrigger>
                       <SelectContent>
-                        {modelsDetails.map((model) => (
-                          <SelectItem key={model._id} value={model._id}>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{model.name}</span>
-                              {model.description && (
-                                <span className="text-xs text-muted-foreground">
-                                  {model.description}
-                                </span>
-                              )}
-                            </div>
+                        {modelsList.map((model, index) => (
+                          <SelectItem key={index} value={model}>
+                            <span className="font-mono text-xs">{model}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <Button
                       onClick={handleSendModel}
-                      disabled={sendModelLoading || !selectedModelId}
+                      disabled={sendModelLoading || !selectedModelName}
+                      className="bg-blue-600 hover:bg-blue-700"
                     >
                       {sendModelLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Upload className="h-4 w-4" />
+                        <Send className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
                 </div>
 
-                {/* Run Model - Activate model in Rasa */}
+                {/* Run Model - Activate model in current Rasa */}
                 <div className="space-y-2">
-                  <Label htmlFor="modelName" className="flex items-center gap-2">
+                  <Label htmlFor="runModelName" className="flex items-center gap-2">
                     <Play className="h-4 w-4" />
                     {t("Run Model")}
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    {t("Activate a model that exists in Rasa server")}
+                    {t("Activate a model in this chatbot's Rasa server")}
                   </p>
                   <div className="flex gap-2">
                     <Select
-                      value={selectedModelName}
-                      onValueChange={setSelectedModelName}
+                      value={selectedRunModelName}
+                      onValueChange={setSelectedRunModelName}
                       disabled={modelsList.length === 0}
                     >
                       <SelectTrigger className="flex-1">
@@ -437,7 +429,7 @@ export function ChatBotOperationsDialog({
                     </Select>
                     <Button
                       onClick={handleRunModel}
-                      disabled={runModelLoading || !selectedModelName}
+                      disabled={runModelLoading || !selectedRunModelName}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       {runModelLoading ? (

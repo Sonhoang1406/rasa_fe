@@ -16,7 +16,7 @@ export interface UpdateChatBotRequest {
 }
 
 export interface SendModelRequest {
-  modelId: string;
+  modelName: string;
 }
 
 export interface RunModelRequest {
