@@ -19,9 +19,11 @@ import {
   EditRulePageNew,
   RuleManagementPage,
 } from "@/features/rules";
+import { ChatBotManagement } from "@/features/chatbot";
 import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
 import { UserManagement } from "@/features/users/pages/UserManagement";
+import { UQuestionManagement } from "@/features/uquestion/pages/UQuestionManagement";
 import { StoryManagementPage } from "@/features/stories/pages/StoryManagementPage";
 import { EditStoryPage } from "@/features/stories/pages/EditStoryPage";
 import { CreateStoryPage } from "@/features/stories/pages/CreateStoryPage";
@@ -61,6 +63,8 @@ const router = createBrowserRouter([
       },
       { path: "responses", element: <ResponseManagement /> },
       { path: "actions", element: <ActionManagement /> },
+      { path: "chat_bot", element: <ChatBotManagement /> },
+      { path: "uquestion", element: <UQuestionManagement /> },
       {
         path: "stories",
         children: [

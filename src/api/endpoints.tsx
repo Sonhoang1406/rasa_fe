@@ -76,6 +76,32 @@ export default {
     SOFT_DELETE: (id: string) => `/api/v1/rule/${id}/soft`,
     RESTORE: (id: string) => `/api/v1/rule/${id}/restore`,
   },
+    UQUESTION_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/uquestion",
+    GET_BY_ID: (id: string) => `/api/v1/uquestion/${id}`,
+    CREATE: "/api/v1/uquestion",
+    UPDATE: (id: string) => `/api/v1/uquestion/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/uquestion/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/uquestion/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/uuestion/${id}/restore`,
+  },
+  CHATBOT_ENDPOINTS: {
+    GET_ALL_PAGINATED: "/api/v1/chatbot",
+   GET_BY_ID: (id: string) => `/api/v1/chatbot/${id}`,
+    CREATE: "/api/v1/chatbot",
+    UPDATE: (id: string) => `/api/v1/chatbot/${id}`,
+    HARD_DELETE: (id: string) => `/api/v1/chatbot/${id}/hard`,
+    SOFT_DELETE: (id: string) => `/api/v1/chatbot/${id}/soft`,
+    RESTORE: (id: string) => `/api/v1/chatbot/${id}/restore`,
+  
+    GET_MODELS_LIST: (id: string) => `/api/v1/chatbot/${id}/models`,
+    GET_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/actions`,
+    HEALTH_CHECK: (id: string) => `/api/v1/chatbot/${id}/health`,
+    SEND_MODEL: (id: string) => `/api/v1/chatbot/${id}/send-model`,
+    RUN_MODEL: (id: string) => `/api/v1/chatbot/${id}/run-model`,
+    PUSH_ACTION: (id: string) => `/api/v1/chatbot/${id}/push-action`,
+    
+},
 
   STORY_ENDPOINTS: {
     GET_ALL_PAGINATED: "/api/v1/story",
