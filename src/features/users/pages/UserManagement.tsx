@@ -139,7 +139,6 @@ export const UserManagement = () => {
     fetchUsers();
   }, [pagination.page, pagination.limit]);
 
-
   // Xử lý submit form (tìm kiếm, lọc)
   //   const onSubmit = (data: z.infer<typeof filterSchema>) => {
   //     fetchUsers(1, data.limit || data.limit, data.search, data.deleted);
@@ -188,7 +187,6 @@ export const UserManagement = () => {
       setConfirmUnbanOpen(false); // <- tự động đóng dialog
     }
   };
-
 
   const refreshUsers = () => {
     fetchUsers();
@@ -361,7 +359,7 @@ export const UserManagement = () => {
           </Drawer>
 
           <div className="flex-1"></div>
-          <DropdownMenu>
+          {/* <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
                 <FileCode2 className="mr-2 h-4 w-4" />
@@ -378,7 +376,7 @@ export const UserManagement = () => {
                 {t("Export Users")}
               </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu> */}
         </form>
       </Form>
 
@@ -453,17 +451,20 @@ export const UserManagement = () => {
               {
                 accessorKey: "status",
                 header: "Status",
-                cell: ({row}) => {
+                cell: ({ row }) => {
                   const status = row.original.status;
 
-                  let className = "bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"; // PENDING
+                  let className =
+                    "bg-gray-200 text-gray-800 hover:bg-gray-300 transition-colors"; // PENDING
                   if (status === "ACTIVE")
-                    className = "bg-green-200 text-green-800 hover:bg-green-300 transition-colors"; // ACTIVE
+                    className =
+                      "bg-green-200 text-green-800 hover:bg-green-300 transition-colors"; // ACTIVE
                   if (status === "BANNED")
-                    className = "bg-red-200 text-red-800 hover:bg-red-300 transition-colors"; // BANNED
+                    className =
+                      "bg-red-200 text-red-800 hover:bg-red-300 transition-colors"; // BANNED
 
                   return <Badge className={className}>{status}</Badge>;
-                } 
+                },
               },
               {
                 id: "actions",
@@ -504,7 +505,11 @@ export const UserManagement = () => {
                             : handleAskUnbanUser(row.original._id)
                         }
                       >
-                        {!isBanned ? <Ban className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                        {!isBanned ? (
+                          <Ban className="h-4 w-4" />
+                        ) : (
+                          <Unlock className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   );

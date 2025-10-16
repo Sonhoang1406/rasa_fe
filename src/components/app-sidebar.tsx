@@ -66,6 +66,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               title: "Rules",
               url: "/rules",
             },
+            { title: "Stories", url: "/stories" },
             {
               title: "Slots",
               url: "/slots",

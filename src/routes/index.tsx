@@ -2,6 +2,8 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HomeDirectorPage, NotFoundPage, UserProfilePage } from "@/pages";
 import { AuthLayout, MainLayout } from "@/layouts";
 import { LoginPage, SignUpPage, VerifyPage } from "@/features/auth";
+import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage";
 import { HomeChat } from "@/features/chat/pages/HomeChatPage";
 import { RoleManagement } from "@/features/roles";
 import { EntityManagement } from "@/features/entity";
@@ -22,6 +24,9 @@ import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
 import { UserManagement } from "@/features/users/pages/UserManagement";
 import { UQuestionManagement } from "@/features/uquestion/pages/UQuestionManagement";
+import { StoryManagementPage } from "@/features/stories/pages/StoryManagementPage";
+import { EditStoryPage } from "@/features/stories/pages/EditStoryPage";
+import { CreateStoryPage } from "@/features/stories/pages/CreateStoryPage";
 
 const router = createBrowserRouter([
   {
@@ -60,6 +65,14 @@ const router = createBrowserRouter([
       { path: "actions", element: <ActionManagement /> },
       { path: "chat_bot", element: <ChatBotManagement /> },
       { path: "uquestion", element: <UQuestionManagement /> },
+      {
+        path: "stories",
+        children: [
+          { index: true, element: <StoryManagementPage /> },
+          { path: "new", element: <CreateStoryPage /> },
+          { path: "edit", element: <EditStoryPage /> },
+        ],
+      },
     ],
   },
   {
@@ -77,6 +90,14 @@ const router = createBrowserRouter([
       {
         path: "verify",
         element: <VerifyPage />,
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />,
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage />,
       },
     ],
   },

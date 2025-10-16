@@ -4,11 +4,13 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useVerify } from "@/hooks/useVerify";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export function VerifyPage() {
   const { verify, isLoading, error } = useVerify();
-  const naviate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { email, token, type } = location.state || {};
   const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<
@@ -31,7 +33,8 @@ export function VerifyPage() {
 
     setIsVerifying(true);
     try {
-      const result = await verify(otp);
+      // Truyền cả otp và token vào verify nếu cần
+      const result = await verify(otp, token);
       console.log("verify result", result);
       if (!result || result.success === false) {
         // handle lỗi theo body trả về
@@ -42,8 +45,13 @@ export function VerifyPage() {
       setPopupMessage("Verification successful! Redirecting...");
       setIsPopupOpen(true);
       await sleep(1200);
-      naviate("/auth");
-      // Add redirect logic here if needed
+      if (type === "register") {
+        navigate("/auth");
+      } else if (type === "forgot") {
+        navigate("/auth/reset-password", { state: { email, token } });
+      } else {
+        navigate("/auth");
+      }
     } catch (error) {
       console.log(error);
       setVerificationStatus("error");
