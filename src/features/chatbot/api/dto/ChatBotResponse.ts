@@ -1,59 +1,3 @@
-// ChatBotResponse.ts
-
-export interface ChatBotQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
-  deleted?: boolean;
-  sort?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-export default function createChatBotQuery(query: ChatBotQuery): string {
-  const params = new URLSearchParams();
-
-  if (query.page !== undefined) params.append("page", query.page.toString());
-  if (query.limit !== undefined) params.append("limit", query.limit.toString());
-  if (query.search) params.append("search", query.search);
-  if (query.deleted !== undefined) params.append("deleted", query.deleted.toString());
-  if (query.sort) params.append("sort", query.sort);
-  if (query.startDate) params.append("startDate", query.startDate);
-  if (query.endDate) params.append("endDate", query.endDate);
-
-  return params.toString();
-}
-
-export interface CreateChatBotRequest {
-  name: string;
-  ip: string;
-  rasaPort: number;
-  flaskPort: number;
-  roles?: string[];
-}
-
-export interface UpdateChatBotRequest {
-  _id: string;
-  name: string;
-  ip: string;
-  rasaPort: number;
-  flaskPort: number;
-  roles?: string[];
-}
-
-export interface SendModelRequest {
-  modelId: string;
-}
-
-export interface RunModelRequest {
-  modelName: string;
-}
-
-export interface PushActionRequest {
-  modelId?: string;
-  actionIds?: string[];
-}
-
 export interface ChatBot {
   _id: string;
   name: string;
@@ -81,11 +25,8 @@ export interface ListChatBotResponse {
   };
 }
 
-export interface ChatBotDetailResponse extends ChatBot {
-  // Có thể thêm các trường khác nếu cần
-}
+export interface ChatBotDetailResponse extends ChatBot {}
 
-// Model detail interface
 export interface ModelDetail {
   _id: string;
   name: string;
@@ -96,9 +37,9 @@ export interface ModelDetail {
 }
 
 export interface ModelsListResponse {
-  models: string[];
+  models: string[]; // models in Rasa
   total: number;
-  details: ModelDetail[]; 
+  details: ModelDetail[]; // models in MongoDB
 }
 
 export interface ActionsListResponse {
@@ -112,7 +53,6 @@ export interface ActionsListResponse {
   total: number;
 }
 
-// UPDATED: Health Check Response to match backend
 export interface ServiceStatus {
   error?: string;
   status: "running" | "not_responding" | "offline";
@@ -129,24 +69,22 @@ export interface HealthCheckResponse {
 export interface SendModelResponse {
   success: boolean;
   message: string;
-  data?: {
-    modelName?: string;
-  };
+  data?: Record<string, any>;
 }
 
 export interface RunModelResponse {
   success: boolean;
   message: string;
-  data?: {
-    modelName?: string;
-  };
+  data?: Record<string, any>;
 }
 
 export interface PushActionResponse {
   success: boolean;
   message: string;
-  data?: {
-    totalActions?: number;
-    actionNames?: string[];
-  };
+  data?: Record<string, any>;
+}
+export interface RunActionResponse {
+  success: boolean;
+  message: string;
+  data?: any;
 }

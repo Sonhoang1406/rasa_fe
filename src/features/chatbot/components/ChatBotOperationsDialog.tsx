@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Activity, Send, Play, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { chatBotService } from "../api/service";
+import { chatBotService, myModelService } from "../api/service";
 import { 
   ChatBot, 
   ActionsListResponse, 
@@ -51,17 +51,20 @@ export function ChatBotOperationsDialog({
   const [healthStatus, setHealthStatus] = useState<HealthCheckResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
 
-  // Models List
-  const [modelsList, setModelsList] = useState<string[]>([]);
-  const [modelsDetails, setModelsDetails] = useState<ModelDetail[]>([]);
-  const [modelsLoading, setModelsLoading] = useState(false);
+  // Models List (from Rasa - for Run Model only)
+  const [rasaModelsList, setRasaModelsList] = useState<string[]>([]);
+  const [rasaModelsLoading, setRasaModelsLoading] = useState(false);
+
+  // Models from MongoDB (for Send Model)
+  const [mongoModelsList, setMongoModelsList] = useState<ModelDetail[]>([]);
+  const [mongoModelsLoading, setMongoModelsLoading] = useState(false);
 
   // Actions List
   const [actionsList, setActionsList] = useState<ActionsListResponse["actions"]>([]);
   const [actionsLoading, setActionsLoading] = useState(false);
 
   // Send Model (share to another chatbot)
-  const [selectedModelName, setSelectedModelName] = useState("");
+  const [selectedModelId, setSelectedModelId] = useState("");
   const [sendModelLoading, setSendModelLoading] = useState(false);
 
   // Run Model (activate in current chatbot)
@@ -98,19 +101,37 @@ export function ChatBotOperationsDialog({
     }
   };
 
-  const handleGetModelsList = async () => {
+  const handleGetRasaModelsList = async () => {
     if (!chatBot) return;
-    setModelsLoading(true);
+    setRasaModelsLoading(true);
     try {
       const result = await chatBotService.getModelsList(chatBot._id);
-      setModelsList(result.models || []);
-      setModelsDetails(result.details || []);
+      setRasaModelsList(result.models || []);
       toast.success(`${t("Found")} ${result.total} ${t("models in Rasa server")}`);
     } catch (error) {
-      console.error("Get models error:", error);
+      console.error("Get Rasa models error:", error);
       toast.error(t("Failed to fetch models from Rasa"));
     } finally {
-      setModelsLoading(false);
+      setRasaModelsLoading(false);
+    }
+  };
+
+  const handleGetMongoModelsList = async () => {
+    if (!chatBot) return;
+    setMongoModelsLoading(true);
+    try {
+      const result = await myModelService.getPaginate({ 
+        page: 1, 
+        limit: 100, 
+        chatbotId: chatBot._id 
+      });
+      setMongoModelsList(result.data || []);
+      toast.success(`${t("Found")} ${result.data?.length || 0} ${t("models in MongoDB")}`);
+    } catch (error) {
+      console.error("Get MongoDB models error:", error);
+      toast.error(t("Failed to fetch models from MongoDB"));
+    } finally {
+      setMongoModelsLoading(false);
     }
   };
 
@@ -130,12 +151,12 @@ export function ChatBotOperationsDialog({
   };
 
   const handleSendModel = async () => {
-    if (!chatBot || !selectedModelName) return;
+    if (!chatBot || !selectedModelId) return;
     setSendModelLoading(true);
     try {
-      await chatBotService.sendModel(chatBot._id, { modelName: selectedModelName });
+      await chatBotService.sendModel(chatBot._id, { modelId: selectedModelId });
       toast.success(t("Model sent to another chatbot successfully"));
-      setSelectedModelName("");
+      setSelectedModelId("");
     } catch (error) {
       console.error("Send model error:", error);
       toast.error(t("Failed to send model to another chatbot"));
@@ -164,7 +185,7 @@ export function ChatBotOperationsDialog({
     setPushActionLoading(true);
     try {
       await chatBotService.pushAction(chatBot._id, {
-        modelId: pushActionModelId || undefined,
+        modelId: pushActionModelId && pushActionModelId !== "none" ? pushActionModelId : undefined,
         actionIds: selectedActionIds.length > 0 ? selectedActionIds : undefined,
       });
       
@@ -312,89 +333,119 @@ export function ChatBotOperationsDialog({
           {/* Models Tab */}
           <TabsContent value="models" className="flex-1 overflow-y-auto mt-4">
             <div className="space-y-4 h-full">
-              {/* Get Models List from Rasa */}
+              {/* Send Model - Share model from MongoDB to Rasa */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold">{t("Models in Rasa Server")}</Label>
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Send className="h-4 w-4" />
+                    {t("Send Model to Another ChatBot")}
+                  </Label>
                   <Button
-                    onClick={handleGetModelsList}
-                    disabled={modelsLoading}
+                    onClick={handleGetMongoModelsList}
+                    disabled={mongoModelsLoading}
                     size="sm"
                     variant="outline"
                   >
-                    {modelsLoading ? (
+                    {mongoModelsLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {t("Refresh")}
+                    {t("Load from MongoDB")}
                   </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("Share a trained model stored in MongoDB/MinIO to another chatbot's Rasa server")}
+                </p>
 
-                {modelsList.length > 0 && (
-                  <div className="p-4 bg-muted rounded-lg max-h-48 overflow-y-auto">
+                {mongoModelsList.length > 0 && (
+                  <div className="p-4 bg-muted rounded-lg max-h-32 overflow-y-auto mb-2">
                     <p className="text-xs text-muted-foreground mb-2">
-                      {t("Models available in Rasa server")} ({modelsList.length})
+                      {t("Models in MongoDB")} ({mongoModelsList.length})
                     </p>
                     <div className="space-y-1">
-                      {modelsList.map((model, index) => (
-                        <div key={index} className="flex items-center text-sm p-2 bg-background rounded border">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-                          <span className="font-mono text-xs">{model}</span>
+                      {mongoModelsList.map((model) => (
+                        <div key={model._id} className="flex items-center text-sm p-2 bg-background rounded border">
+                          <CheckCircle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0" />
+                          <span className="font-mono text-xs break-all">{model.url}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {!modelsLoading && modelsList.length === 0 && (
-                  <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
-                    {t("No models found in Rasa server. Click Refresh to check.")}
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedModelId}
+                    onValueChange={setSelectedModelId}
+                    disabled={mongoModelsList.length === 0}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={
+                        mongoModelsList.length === 0 
+                          ? t("Load models from MongoDB first") 
+                          : t("Select model to send")
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mongoModelsList.map((model) => (
+                        <SelectItem key={model._id} value={model._id}>
+                          <span className="font-mono text-xs break-all">{model.url}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleSendModel}
+                    disabled={sendModelLoading || !selectedModelId}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {sendModelLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
 
               <div className="border-t pt-4 space-y-4">
-                {/* Send Model - Share model to another chatbot */}
+                {/* Get Models List from Rasa */}
                 <div className="space-y-2">
-                  <Label htmlFor="modelId" className="flex items-center gap-2">
-                    <Send className="h-4 w-4" />
-                    {t("Send Model to Another ChatBot")}
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    {t("Share a trained model from this Rasa server to another chatbot's Rasa server")}
-                  </p>
-                  <div className="flex gap-2">
-                    <Select
-                      value={selectedModelName}
-                      onValueChange={setSelectedModelName}
-                      disabled={modelsList.length === 0}
-                    >
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder={
-                          modelsList.length === 0 
-                            ? t("Get models list first") 
-                            : t("Select model to send")
-                        } />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {modelsList.map((model, index) => (
-                          <SelectItem key={index} value={model}>
-                            <span className="font-mono text-xs">{model}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">{t("Models in Rasa Server")}</Label>
                     <Button
-                      onClick={handleSendModel}
-                      disabled={sendModelLoading || !selectedModelName}
-                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleGetRasaModelsList}
+                      disabled={rasaModelsLoading}
+                      size="sm"
+                      variant="outline"
                     >
-                      {sendModelLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
+                      {rasaModelsLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      {t("Refresh")}
                     </Button>
                   </div>
+
+                  {rasaModelsList.length > 0 && (
+                    <div className="p-4 bg-muted rounded-lg max-h-48 overflow-y-auto">
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {t("Models available in Rasa server")} ({rasaModelsList.length})
+                      </p>
+                      <div className="space-y-1">
+                        {rasaModelsList.map((modelUrl, index) => (
+                          <div key={index} className="flex items-center text-sm p-2 bg-background rounded border">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                            <span className="font-mono text-xs break-all">{modelUrl}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!rasaModelsLoading && rasaModelsList.length === 0 && (
+                    <div className="p-4 bg-muted rounded-lg text-center text-sm text-muted-foreground">
+                      {t("No models found in Rasa server. Click Refresh to check.")}
+                    </div>
+                  )}
                 </div>
 
                 {/* Run Model - Activate model in current Rasa */}
@@ -410,19 +461,19 @@ export function ChatBotOperationsDialog({
                     <Select
                       value={selectedRunModelName}
                       onValueChange={setSelectedRunModelName}
-                      disabled={modelsList.length === 0}
+                      disabled={rasaModelsList.length === 0}
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder={
-                          modelsList.length === 0 
+                          rasaModelsList.length === 0 
                             ? t("Get models list first") 
                             : t("Select model to activate")
                         } />
                       </SelectTrigger>
                       <SelectContent>
-                        {modelsList.map((model, index) => (
-                          <SelectItem key={index} value={model}>
-                            <span className="font-mono text-xs">{model}</span>
+                        {rasaModelsList.map((modelUrl, index) => (
+                          <SelectItem key={index} value={modelUrl}>
+                            <span className="font-mono text-xs break-all">{modelUrl}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -518,20 +569,20 @@ export function ChatBotOperationsDialog({
                   <Select
                     value={pushActionModelId}
                     onValueChange={setPushActionModelId}
-                    disabled={modelsDetails.length === 0}
+                    disabled={mongoModelsList.length === 0}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={
-                        modelsDetails.length === 0
+                        mongoModelsList.length === 0
                           ? t("Model ID (optional)")
                           : t("Select model (optional)")
                       } />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("None - Push all actions")}</SelectItem>
-                      {modelsDetails.map((model) => (
+                      {mongoModelsList.map((model) => (
                         <SelectItem key={model._id} value={model._id}>
-                          {model.name}
+                          <span className="font-mono text-xs break-all">{model.url}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>

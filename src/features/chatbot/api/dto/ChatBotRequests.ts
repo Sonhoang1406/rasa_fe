@@ -1,3 +1,13 @@
+export interface ChatBotQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  deleted?: boolean;
+  sort?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface CreateChatBotRequest {
   name: string;
   ip: string;
@@ -16,14 +26,14 @@ export interface UpdateChatBotRequest {
 }
 
 export interface SendModelRequest {
-  modelName: string;
+  modelId: string;  // ID của model trong MongoDB
 }
 
 export interface RunModelRequest {
-  modelName: string;
+  modelName: string;  // Tên file model từ Rasa
 }
 
 export interface PushActionRequest {
-  modelId?: string;
-  actionIds?: string[];
+  modelId?: string;      // Optional: ID của model trong MongoDB
+  actionIds?: string[];  // Optional: Danh sách action IDs cần push
 }

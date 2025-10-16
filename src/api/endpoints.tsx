@@ -100,6 +100,9 @@ export default {
     SEND_MODEL: (id: string) => `/api/v1/chatbot/${id}/send-model`,
     RUN_MODEL: (id: string) => `/api/v1/chatbot/${id}/run-model`,
     PUSH_ACTION: (id: string) => `/api/v1/chatbot/${id}/push-action`,
+    GET_MY_MODELS: (id: string) => `/api/v1/chatbot/${id}/my-models`,
+    GET_RASA_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/rasa-actions`,
+    RUN_ACTION: (id: string) => `/api/v1/chatbot/${id}/run-action`,
     
 },
 

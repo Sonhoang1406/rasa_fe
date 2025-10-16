@@ -8,7 +8,7 @@ export interface ChatBotQuery {
   endDate?: string;
 }
 
-export default function createChatBotQuery(query: ChatBotQuery): string {
+export function createChatBotQuery(query: ChatBotQuery): string {
   const params = new URLSearchParams();
 
   if (query.page !== undefined) params.append("page", query.page.toString());
