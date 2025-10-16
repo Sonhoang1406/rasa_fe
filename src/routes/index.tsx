@@ -17,9 +17,11 @@ import {
   EditRulePageNew,
   RuleManagementPage,
 } from "@/features/rules";
+import { ChatBotManagement } from "@/features/chatbot";
 import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 import { PermissionManagement } from "@/features/permissions/pages/PermissionManagement";
 import { UserManagement } from "@/features/users/pages/UserManagement";
+import { UQuestionManagement } from "@/features/uquestion/pages/UQuestionManagement";
 
 const router = createBrowserRouter([
   {
@@ -56,6 +58,8 @@ const router = createBrowserRouter([
       },
       { path: "responses", element: <ResponseManagement /> },
       { path: "actions", element: <ActionManagement /> },
+      { path: "chat_bot", element: <ChatBotManagement /> },
+      { path: "uquestion", element: <UQuestionManagement /> },
     ],
   },
   {
