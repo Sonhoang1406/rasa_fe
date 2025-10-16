@@ -38,8 +38,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useState, useCallback } from "react";
+import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -60,8 +60,6 @@ const filterSchema = z.object({
   page: z.number().optional(),
   limit: z.number().optional(),
   sort: z.string().optional(),
-  createdBy: z.string().optional(),
-  updatedBy: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
 });
@@ -101,85 +99,64 @@ export function StoryManagementPage() {
     },
   });
 
-  // Watch form values for automatic filtering
-  const watchedValues = useWatch({ control: form.control });
-
-  // Debounce search value
-  const [debouncedSearchValue, setDebouncedSearchValue] = useState(
-    watchedValues.search || ""
+  // Fetch stories data
+  const fetchStoriesData = useCallback(
+    async (query: any) => {
+      try {
+        setIsDataLoading(true);
+        setError(null);
+        const response: ListStoryResponse = await storyService.fetchStories(query);
+        setStoriesData(response.data || []);
+        setPagination(response.meta || { total: 0, page: 1, limit: 10, totalPages: 1 });
+      } catch (error) {
+        console.error("Error fetching stories:", error);
+        setError("Failed to load stories");
+        setStoriesData([]);
+      } finally {
+        setIsDataLoading(false);
+      }
+    },
+    []
   );
 
+  // Watch form changes and auto-submit
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setDebouncedSearchValue(watchedValues.search || "");
-    }, 500);
+    const subscription = form.watch(() => {
+      const values = form.getValues();
+      fetchStoriesData(values);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, fetchStoriesData]);
 
-    return () => clearTimeout(timeoutId);
-  }, [watchedValues.search]);
-
-  const fetchStoriesData = async (filters?: z.infer<typeof filterSchema>) => {
-    try {
-      setIsDataLoading(true);
-
-      const queryParams = filters || {
-        page: pagination.page,
-        limit: pagination.limit,
-        search: form.getValues("search"),
-        deleted: form.getValues("deleted"),
-        sort: form.getValues("sort"),
-        startDate: form.getValues("startDate"),
-        endDate: form.getValues("endDate"),
-      };
-
-      const response: ListStoryResponse = await storyService.fetchStories(
-        queryParams
-      );
-
-      if (response.success && Array.isArray(response.data)) {
-        setStoriesData(response.data);
-        setPagination({
-          total: response.meta.total,
-          page: response.meta.page,
-          limit: response.meta.limit,
-          totalPages: response.meta.totalPages,
-        });
-      } else {
-        throw new Error("Invalid data format received from API");
-      }
-    } catch (err) {
-      setError(
-        `Failed to fetch stories: ${
-          err instanceof Error ? err.message : String(err)
-        }`
-      );
-      console.error("Error fetching stories:", err);
-    } finally {
-      setIsDataLoading(false);
-    }
-  };
-
-  const onSubmit = (data: z.infer<typeof filterSchema>) => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
+  // Initial load
+  useEffect(() => {
     fetchStoriesData({
       page: 1,
-      limit: data.limit || pagination.limit,
-      search: data.search,
-      deleted: data.deleted,
-      sort: data.sort,
-      startDate: data.startDate,
-      endDate: data.endDate,
+      limit: 10,
+      deleted: false,
+      sort: "DESC",
     });
+  }, [fetchStoriesData]);
+
+  const onSubmit = (values: z.infer<typeof filterSchema>) => {
+    fetchStoriesData(values);
   };
 
   const handlePageChange = (page: number) => {
-    if (
-      pagination.totalPages === 0 ||
-      page < 1 ||
-      page > pagination.totalPages
-    ) {
-      return;
-    }
-    setPagination((prev) => ({ ...prev, page }));
+    form.setValue("page", page);
+  };
+
+  const handleCreateStory = () => {
+    navigate("/stories/new");
+  };
+
+  const handleEditStory = (story: IStory) => {
+    navigate(`/stories/edit?id=${story._id}`);
+  };
+
+  const handleViewDetails = (story: IStory) => {
+    setSelectedStoryId(story._id);
+    setDetailsDialogOpen(true);
   };
 
   const handleAskDeleteStory = (story: IStory) => {
@@ -191,28 +168,21 @@ export function StoryManagementPage() {
     }
   };
 
-  const handleCreateStory = () => {
-    navigate("new");
-  };
-
-  const handleEditStory = (story: IStory) => {
-    navigate("edit", { state: { story } });
+  const handleAskRestoreStory = (story: IStory) => {
+    setStoryToRestore(story);
+    setConfirmRestoreOpen(true);
   };
 
   const handleConfirmSoftDelete = async () => {
     if (storyToDelete) {
       try {
         await storyService.softDeleteStory(storyToDelete._id);
-        setStoryToDelete(null);
-        setConfirmSoftDeleteOpen(false);
-        fetchStoriesData();
         toast.success(t("Story moved to trash"));
-      } catch (error: any) {
-        console.error("Error soft deleting story:", error);
-        toast.error(
-          t("Failed to move story to trash") +
-            `: ${error.response?.data?.message || error.message}`
-        );
+        const currentValues = form.getValues();
+        fetchStoriesData(currentValues);
+      } catch (error) {
+        console.error("Error deleting story:", error);
+        toast.error(t("Failed to delete story"));
       }
     }
   };
@@ -221,252 +191,29 @@ export function StoryManagementPage() {
     if (storyToDelete) {
       try {
         await storyService.hardDeleteStory(storyToDelete._id);
-        setStoryToDelete(null);
-        setConfirmHardDeleteOpen(false);
-        fetchStoriesData();
-        toast.success(t("Story permanently deleted"));
-      } catch (error: any) {
-        console.error("Error hard deleting story:", error);
-        toast.error(
-          t("Failed to delete story") +
-            `: ${error.response?.data?.message || error.message}`
-        );
+        toast.success(t("Story deleted permanently"));
+        const currentValues = form.getValues();
+        fetchStoriesData(currentValues);
+      } catch (error) {
+        console.error("Error deleting story:", error);
+        toast.error(t("Failed to delete story"));
       }
     }
-  };
-
-  const handleAskRestoreStory = (story: IStory) => {
-    setStoryToRestore(story);
-    setConfirmRestoreOpen(true);
   };
 
   const handleConfirmRestore = async () => {
     if (storyToRestore) {
       try {
         await storyService.restoreStory(storyToRestore._id);
-        toast.success(t("Story restored successfully"));
-        setStoryToRestore(null);
-        setConfirmRestoreOpen(false);
-        fetchStoriesData();
-      } catch (error: any) {
+        toast.success(t("Story restored"));
+        const currentValues = form.getValues();
+        fetchStoriesData(currentValues);
+      } catch (error) {
         console.error("Error restoring story:", error);
-        toast.error(
-          t("Failed to restore story") +
-            `: ${error.response?.data?.message || error.message}`
-        );
+        toast.error(t("Failed to restore story"));
       }
     }
   };
-
-  const handleViewDetails = (story: IStory) => {
-    setSelectedStoryId(story._id);
-    setDetailsDialogOpen(true);
-  };
-
-  // Effects for data fetching and filtering
-  useEffect(() => {
-    fetchStoriesData();
-  }, [pagination.page, pagination.limit]);
-
-  useEffect(() => {
-    if (watchedValues) {
-      const { page, search, ...otherFilters } = watchedValues;
-      setPagination((prev) => ({ ...prev, page: 1 }));
-      fetchStoriesData({
-        page: 1,
-        limit: watchedValues.limit || pagination.limit,
-        search: debouncedSearchValue,
-        ...otherFilters,
-      });
-    }
-  }, [
-    watchedValues.deleted,
-    watchedValues.sort,
-    watchedValues.startDate,
-    watchedValues.endDate,
-    watchedValues.limit,
-  ]);
-
-  useEffect(() => {
-    if (watchedValues) {
-      const { page, search, ...otherFilters } = watchedValues;
-      setPagination((prev) => ({ ...prev, page: 1 }));
-      fetchStoriesData({
-        page: 1,
-        limit: watchedValues.limit || pagination.limit,
-        search: debouncedSearchValue,
-        ...otherFilters,
-      });
-    }
-  }, [debouncedSearchValue]);
-
-  const sortOptions = [
-    { value: "ASC", label: t("Oldest") },
-    { value: "DESC", label: t("Newest") },
-  ];
-
-  const columns = [
-    {
-      id: "select",
-      header: ({ table }: any) => (
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      ),
-      cell: ({ row }: any) => (
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      ),
-    },
-    {
-      id: "name",
-      accessorKey: "name",
-      header: ({ column }: any) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          {t("Name")}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      ),
-      cell: ({ row }: any) => (
-        <div className="font-medium">{row.getValue("name")}</div>
-      ),
-    },
-    {
-      id: "description",
-      accessorKey: "description",
-      header: t("Description"),
-      cell: ({ row }: any) => (
-        <div className="text-sm text-muted-foreground max-w-xs truncate">
-          {row.getValue("description") || t("No description")}
-        </div>
-      ),
-    },
-    {
-      id: "intents",
-      accessorKey: "intents",
-      header: t("Intents"),
-      cell: ({ row }: any) => {
-        const intents = row.getValue("intents") as any[];
-        return (
-          <div className="text-sm">
-            {intents && intents.length > 0
-              ? `${intents.length} ${t("intents")}`
-              : t("No intents")}
-          </div>
-        );
-      },
-    },
-    {
-      id: "action",
-      accessorKey: "action",
-      header: t("Actions"),
-      cell: ({ row }: any) => {
-        const action = row.getValue("action") as any[];
-        return (
-          <div className="text-sm">
-            {action && action.length > 0
-              ? `${action.length} ${t("actions")}`
-              : t("No actions")}
-          </div>
-        );
-      },
-    },
-    {
-      id: "responses",
-      accessorKey: "responses",
-      header: t("Responses"),
-      cell: ({ row }: any) => {
-        const responses = row.getValue("responses") as any[];
-        return (
-          <div className="text-sm">
-            {responses && responses.length > 0
-              ? `${responses.length} ${t("responses")}`
-              : t("No responses")}
-          </div>
-        );
-      },
-    },
-    {
-      id: "createdAt",
-      accessorKey: "createdAt",
-      header: t("Created At"),
-      cell: ({ row }: any) => (
-        <div className="text-sm">
-          {row.getValue("createdAt")
-            ? new Date(row.getValue("createdAt")).toLocaleDateString()
-            : "-"}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: t("Operations"),
-      cell: ({ row }: any) => {
-        const story = row.original as IStory;
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => handleViewDetails(story)}
-              title={t("View details")}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-            {!story.deleted && (
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-                onClick={() => handleEditStory(story)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            )}
-            {story.deleted ? (
-              <Button
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => handleAskRestoreStory(story)}
-                title={t("Restore from trash")}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-orange-600 hover:bg-orange-700"
-                onClick={() => handleAskDeleteStory(story)}
-                title={t("Move to trash")}
-              >
-                <Archive className="h-4 w-4" />
-              </Button>
-            )}
-            {story.deleted && (
-              <Button
-                size="sm"
-                className="bg-red-700 hover:bg-red-800"
-                onClick={() => handleAskDeleteStory(story)}
-                title={t("Delete permanently")}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        );
-      },
-    },
-  ];
 
   return (
     <div className="relative">
@@ -475,47 +222,46 @@ export function StoryManagementPage() {
           className="table-controller py-4 flex gap-4 flex-col sm:flex-row"
           onSubmit={form.handleSubmit(onSubmit)}
         >
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <div className="relative">
-              <div className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground">
-                <SearchIcon className="h-4 w-4" />
-              </div>
-              <FormField
-                control={form.control}
-                name="search"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        id="search"
-                        type="search"
-                        placeholder={t("Search stories")}
-                        className="w-full rounded-lg bg-background pl-8"
-                        {...field}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-          <Button type="submit">
-            <SearchIcon className="mr-2 h-4 w-4" />
-            <span>{t("Search")}</span>
+          <FormField
+            control={form.control}
+            name="search"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <SearchIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                    <Input
+                      {...field}
+                      placeholder={t("Search stories...")}
+                      className="pl-10"
+                    />
+                  </div>
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <Button
+            type="submit"
+            variant="outline"
+            className="bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+          >
+            {t("Search")}
           </Button>
+
           <Drawer>
             <DrawerTrigger asChild>
-              <Button className="bg-blue-600">
-                <SlidersHorizontal className="mr-2 h-4 w-4" />
-                <span>{t("Filter")}</span>
+              <Button variant="outline" className="gap-2">
+                <SlidersHorizontal className="h-4 w-4" />
+                {t("Filters")}
               </Button>
             </DrawerTrigger>
             <DrawerContent>
               <div className="mx-auto w-full max-w-sm">
                 <DrawerHeader>
-                  <DrawerTitle>{t("Filter Stories")}</DrawerTitle>
+                  <DrawerTitle>{t("Filter Options")}</DrawerTitle>
                 </DrawerHeader>
-                <div className="grid gap-4 p-4">
+                <div className="p-4 pb-0 space-y-4">
                   <FormField
                     control={form.control}
                     name="deleted"
@@ -524,12 +270,12 @@ export function StoryManagementPage() {
                         <FormControl>
                           <div className="flex items-center space-x-2">
                             <Checkbox
-                              id="story-filter-deleted"
+                              id="deleted"
                               checked={field.value}
                               onCheckedChange={field.onChange}
                             />
                             <label
-                              htmlFor="story-filter-deleted"
+                              htmlFor="deleted"
                               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                             >
                               {t("Show deleted stories")}
@@ -552,30 +298,27 @@ export function StoryManagementPage() {
                             </label>
                             <Popover>
                               <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                      "w-full justify-between",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value
-                                      ? sortOptions.find(
-                                          (option) =>
-                                            option.value === field.value
-                                        )?.label
-                                      : t("Select sort order")}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-full justify-between"
+                                >
+                                  {field.value === "DESC"
+                                    ? t("Newest first")
+                                    : field.value === "ASC"
+                                      ? t("Oldest first")
+                                      : t("Select sort")}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+                                </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-full p-0">
                                 <Command>
                                   <CommandList>
                                     <CommandGroup>
-                                      {sortOptions.map((option) => (
+                                      {[
+                                        { value: "DESC", label: t("Newest first") },
+                                        { value: "ASC", label: t("Oldest first") },
+                                      ].map((option) => (
                                         <CommandItem
                                           key={option.value}
                                           value={option.value}
@@ -583,15 +326,15 @@ export function StoryManagementPage() {
                                             field.onChange(option.value);
                                           }}
                                         >
-                                          {option.label}
                                           <Check
                                             className={cn(
-                                              "ml-auto",
+                                              "mr-2 h-4 w-4",
                                               field.value === option.value
                                                 ? "opacity-100"
                                                 : "opacity-0"
                                             )}
                                           />
+                                          {option.label}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -599,48 +342,6 @@ export function StoryManagementPage() {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                              {t("Start Date")}
-                            </label>
-                            <Input
-                              type="date"
-                              {...field}
-                              value={field.value || ""}
-                            />
-                          </div>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="endDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">
-                              {t("End Date")}
-                            </label>
-                            <Input
-                              type="date"
-                              {...field}
-                              value={field.value || ""}
-                            />
                           </div>
                         </FormControl>
                       </FormItem>
@@ -653,46 +354,39 @@ export function StoryManagementPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <FormItem className="flex items-center gap-2">
+                          <div className="flex items-center justify-between">
                             <Popover>
                               <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                      "w-[100px] justify-between",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value
-                                      ? field.value
-                                      : t("Select limit")}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  className="w-[200px] justify-between"
+                                >
+                                  {field.value}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-[100px] p-0">
+                              <PopoverContent className="w-[200px] p-0">
                                 <Command>
                                   <CommandList>
                                     <CommandGroup>
-                                      {[10, 20, 30, 40, 50].map((limit) => (
+                                      {[5, 10, 20, 50, 100].map((limit) => (
                                         <CommandItem
-                                          value={limit.toString()}
                                           key={limit}
+                                          value={limit.toString()}
                                           onSelect={() => {
-                                            form.setValue("limit", limit);
+                                            field.onChange(limit);
                                           }}
                                         >
-                                          {limit}
                                           <Check
                                             className={cn(
-                                              "ml-auto",
+                                              "mr-2 h-4 w-4",
                                               field.value === limit
                                                 ? "opacity-100"
                                                 : "opacity-0"
                                             )}
                                           />
+                                          {limit}
                                         </CommandItem>
                                       ))}
                                     </CommandGroup>
@@ -703,7 +397,7 @@ export function StoryManagementPage() {
                             <span className="text-sm font-medium leading-none">
                               {t("stories / page")}
                             </span>
-                          </FormItem>
+                          </div>
                         </FormControl>
                       </FormItem>
                     )}
@@ -725,34 +419,214 @@ export function StoryManagementPage() {
             className="bg-green-600 hover:bg-green-700"
           >
             <Plus className="mr-2 h-4 w-4" />
-            {t("Create Story")}
+            {t("Tạo Luật")}
           </Button>
         </form>
       </Form>
 
-      {error && <div className="text-red-600 text-center py-4">{error}</div>}
+      {error ? (
+        <div className="p-8 text-center">
+          <p className="text-red-500">{error}</p>
+          <Button
+            onClick={() => fetchStoriesData({ page: 1, limit: 10, deleted: false, sort: "DESC" })}
+            className="mt-4"
+          >
+            {t("Retry")}
+          </Button>
+        </div>
+      ) : (
+        <DataTable
+          columns={[
+            {
+              id: "select",
+              header: ({ table }) => (
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && "indeterminate")
+                  }
+                  onCheckedChange={(value) =>
+                    table.toggleAllPageRowsSelected(!!value)
+                  }
+                  aria-label="Select all"
+                />
+              ),
+              cell: ({ row }) => (
+                <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+                  aria-label="Select row"
+                />
+              ),
+              enableSorting: false,
+              enableHiding: false,
+            },
+            {
+              accessorKey: "name",
+              header: ({ column }) => (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === "asc")
+                  }
+                >
+                  {t("Name")}
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              ),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                const isDeleted = story.deleted || false;
+                return (
+                  <span className={cn(
+                    "font-medium",
+                    isDeleted && "line-through text-muted-foreground"
+                  )}>
+                    {story.name}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "description",
+              header: t("Description"),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                return (
+                  <span className="text-sm text-muted-foreground">
+                    {story.description || "-"}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "intents",
+              header: t("Intents"),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                const intentsCount = Array.isArray(story.intents) ? story.intents.length : 0;
+                return (
+                  <span className="text-sm">
+                    {intentsCount > 0 ? `${intentsCount} intent${intentsCount > 1 ? 's' : ''}` : t("Không có intent")}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "action",
+              header: t("Actions"),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                const actionsCount = Array.isArray(story.action) ? story.action.length : 0;
+                return (
+                  <span className="text-sm">
+                    {actionsCount > 0 ? `${actionsCount} action${actionsCount > 1 ? 's' : ''}` : t("Không có action")}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "responses",
+              header: t("Responses"),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                const responsesCount = Array.isArray(story.responses) ? story.responses.length : 0;
+                return (
+                  <span className="text-sm">
+                    {responsesCount > 0 ? `${responsesCount} phản hồi` : t("Không có phản hồi")}
+                  </span>
+                );
+              },
+            },
+            {
+              accessorKey: "createdAt",
+              header: ({ column }) => (
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === "asc")
+                  }
+                >
+                  {t("Tạo lúc")}
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              ),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                return (
+                  <span className="text-sm">
+                    {new Date(story.createdAt).toLocaleDateString("vi-VN")}
+                  </span>
+                );
+              },
+            },
+            {
+              id: "actions",
+              header: t("Thao tác"),
+              cell: ({ row }) => {
+                const story = row.original as IStory;
+                const isDeleted = story.deleted || false;
 
-      <DataTable
-        data={storiesData}
-        columns={columns}
-        rowSelection={rowSelection}
-        setRowSelection={setRowSelection}
-        isLoading={isDataLoading}
-        meta={{
-          total: pagination.total,
-          page: pagination.page,
-          limit: pagination.limit,
-          totalPages: pagination.totalPages,
-        }}
-        onChangePage={handlePageChange}
-      />
-
-      {/* Dialogs */}
-      <StoryDetailsDialog
-        storyId={selectedStoryId}
-        open={detailsDialogOpen}
-        onOpenChange={setDetailsDialogOpen}
-      />
+                return (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => handleViewDetails(story)}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {!isDeleted && (
+                      <Button
+                        onClick={() => handleEditStory(story)}
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isDeleted ? (
+                      <>
+                        <Button
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleAskRestoreStory(story)}
+                          title={t("Restore from trash")}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="bg-red-700 hover:bg-red-800"
+                          onClick={() => handleAskDeleteStory(story)}
+                          title={t("Delete permanently")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => handleAskDeleteStory(story)}
+                        title={t("Move to trash")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                );
+              },
+            },
+          ]}
+          data={storiesData}
+          meta={pagination}
+          onChangePage={handlePageChange}
+          isLoading={isDataLoading}
+          rowSelection={rowSelection}
+          setRowSelection={setRowSelection}
+        />
+      )}
 
       <ConfirmSoftDeleteDialog
         open={confirmSoftDeleteOpen}
@@ -771,6 +645,23 @@ export function StoryManagementPage() {
         onOpenChange={setConfirmRestoreOpen}
         onConfirm={handleConfirmRestore}
       />
+
+      <StoryDetailsDialog
+        storyId={selectedStoryId}
+        open={detailsDialogOpen}
+        onOpenChange={setDetailsDialogOpen}
+      />
+
+      <div
+        className={cn(
+          "absolute bottom-24 right-1/2 translate-x-1/2 translate-y-1/2 hidden",
+          Object.keys(rowSelection).length > 0 && "block"
+        )}
+      >
+        <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-md">
+          {Object.keys(rowSelection).length} {t("items selected")}
+        </div>
+      </div>
     </div>
   );
 }
