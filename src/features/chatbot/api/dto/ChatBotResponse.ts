@@ -56,12 +56,15 @@ export interface ActionsListResponse {
 export interface ServiceStatus {
   error?: string;
   status: "running" | "not_responding" | "offline";
+  model_file?: string;
+  [key: string]: any; // Allow additional properties
 }
 
 export interface HealthCheckResponse {
   success: boolean;
   data: {
-    [serviceName: string]: ServiceStatus;
+    ActionsServer: ServiceStatus;
+    RasaServer: ServiceStatus;
   };
   message: string;
 }

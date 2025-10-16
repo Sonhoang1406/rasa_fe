@@ -27,11 +27,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Activity, Send, Play, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { chatBotService, myModelService } from "../api/service";
-import { 
-  ChatBot, 
-  ActionsListResponse, 
+import {
+  ChatBot,
+  ActionsListResponse,
   HealthCheckResponse,
-  ModelDetail 
+  ModelDetail
 } from "../api/dto/ChatBotResponse";
 
 interface ChatBotOperationsDialogProps {
@@ -46,7 +46,7 @@ export function ChatBotOperationsDialog({
   onOpenChange,
 }: ChatBotOperationsDialogProps) {
   const { t } = useTranslation();
-  
+
   // Health Check
   const [healthStatus, setHealthStatus] = useState<HealthCheckResponse | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
@@ -83,15 +83,28 @@ export function ChatBotOperationsDialog({
       const result = await chatBotService.healthCheck(chatBot._id);
       setHealthStatus(result);
 
-      const services = Object.entries(result.data);
-      const offlineServices = services.filter(([_, service]) => 
-        service.status === "offline" || service.status === "not_responding"
-      );
-      
-      if (offlineServices.length > 0) {
-        toast.warning(`${offlineServices.length} ${t("service(s) offline")}`);
+      // Check if result has data property with services
+      if (result && result.data && typeof result.data === 'object') {
+        const services = Object.entries(result.data);
+
+        const offlineServices = services.filter(([_, service]) =>
+          service && service.status && (service.status === "offline" || service.status === "not_responding")
+        );
+
+        const totalServices = services.length;
+        const onlineServices = services.filter(([_, service]) =>
+          service && service.status === "running"
+        ).length;
+
+        if (offlineServices.length > 0) {
+          toast.warning(`${offlineServices.length}/${totalServices} ${t("service(s) offline")}`);
+        } else if (onlineServices === totalServices) {
+          toast.success(t("All services are online"));
+        } else {
+          toast.info(`${onlineServices}/${totalServices} ${t("services online")}`);
+        }
       } else {
-        toast.success(t("All services are online"));
+        toast.warning(t("Health check completed but no service data available"));
       }
     } catch (error) {
       console.error("Health check error:", error);
@@ -120,10 +133,10 @@ export function ChatBotOperationsDialog({
     if (!chatBot) return;
     setMongoModelsLoading(true);
     try {
-      const result = await myModelService.getPaginate({ 
-        page: 1, 
-        limit: 100, 
-        chatbotId: chatBot._id 
+      const result = await myModelService.getPaginate({
+        page: 1,
+        limit: 100,
+        chatbotId: chatBot._id
       });
       setMongoModelsList(result.data || []);
       toast.success(`${t("Found")} ${result.data?.length || 0} ${t("models in MongoDB")}`);
@@ -188,7 +201,7 @@ export function ChatBotOperationsDialog({
         modelId: pushActionModelId && pushActionModelId !== "none" ? pushActionModelId : undefined,
         actionIds: selectedActionIds.length > 0 ? selectedActionIds : undefined,
       });
-      
+
       toast.success(t("Actions pushed to Rasa successfully. actions.py file updated."));
       setPushActionModelId("");
       setSelectedActionIds([]);
@@ -201,7 +214,7 @@ export function ChatBotOperationsDialog({
   };
 
   const toggleActionSelection = (actionId: string) => {
-    setSelectedActionIds(prev => 
+    setSelectedActionIds(prev =>
       prev.includes(actionId)
         ? prev.filter(id => id !== actionId)
         : [...prev, actionId]
@@ -250,74 +263,91 @@ export function ChatBotOperationsDialog({
 
             {healthStatus && (
               <div className="space-y-3">
-                {/* Overall Message */}
-                {healthStatus.message && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                    <div className="flex items-center text-blue-700 dark:text-blue-300">
-                      <Activity className="h-4 w-4 mr-2" />
-                      <span className="font-medium">{healthStatus.message}</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Services Status */}
                 <div className="space-y-2">
                   <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">
                     {t("Services Status")}:
                   </h4>
-                  
-                  {Object.entries(healthStatus.data).map(([serviceName, serviceData]) => {
-                    const isOnline = serviceData.status === "running";
-                    const isWarning = serviceData.status === "not_responding";
-                    
-                    return (
-                      <div
-                        key={serviceName}
-                        className={`p-4 rounded-lg border-2 ${
-                          isOnline
+
+                  {healthStatus.data && typeof healthStatus.data === 'object' ? (
+                    Object.entries(healthStatus.data).map(([serviceName, serviceData]) => {
+                      // Additional safety check for serviceData
+                      if (!serviceData || typeof serviceData !== 'object') {
+                        return null;
+                      }
+
+                      const isOnline = serviceData.status === "running";
+                      const isWarning = serviceData.status === "not_responding";
+
+                      return (
+                        <div
+                          key={serviceName}
+                          className={`p-4 rounded-lg border-2 ${isOnline
                             ? "bg-green-50 dark:bg-green-950 border-green-300 dark:border-green-700"
                             : isWarning
-                            ? "bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700"
-                            : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center mb-2">
-                              {isOnline ? (
-                                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
-                              ) : (
-                                <AlertCircle className={`h-4 w-4 mr-2 ${
-                                  isWarning 
-                                    ? "text-yellow-600 dark:text-yellow-400" 
+                              ? "bg-yellow-50 dark:bg-yellow-950 border-yellow-300 dark:border-yellow-700"
+                              : "bg-red-50 dark:bg-red-950 border-red-300 dark:border-red-700"
+                            }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center mb-2">
+                                {isOnline ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mr-2" />
+                                ) : (
+                                  <AlertCircle className={`h-4 w-4 mr-2 ${isWarning
+                                    ? "text-yellow-600 dark:text-yellow-400"
                                     : "text-red-600 dark:text-red-400"
-                                }`} />
-                              )}
-                              <h5 className="font-semibold text-sm">{serviceName}</h5>
-                            </div>
-                            
-                            <Badge
-                              variant={isOnline ? "default" : "destructive"}
-                              className={isWarning ? "bg-yellow-500 hover:bg-yellow-600" : ""}
-                            >
-                              {serviceData.status.toUpperCase()}
-                            </Badge>
-
-                            {serviceData.error && (
-                              <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border border-red-200 dark:border-red-800">
-                                <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
-                                  {t("Error Details")}:
-                                </p>
-                                <p className="text-xs text-red-600 dark:text-red-400 font-mono break-all">
-                                  {serviceData.error}
-                                </p>
+                                    }`} />
+                                )}
+                                <h5 className="font-semibold text-sm">
+                                  {serviceName === "RasaServer" ? t("Rasa Server") :
+                                    serviceName === "ActionsServer" ? t("Actions Server") :
+                                      serviceName}
+                                </h5>
                               </div>
-                            )}
+
+                              <Badge
+                                variant={isOnline ? "default" : "destructive"}
+                                className={isWarning ? "bg-yellow-500 hover:bg-yellow-600" : ""}
+                              >
+                                {serviceData.status === "running" ? t("Running") :
+                                  serviceData.status === "offline" ? t("Offline") :
+                                    serviceData.status === "not_responding" ? t("Not Responding") :
+                                      serviceData.status ? String(serviceData.status).toUpperCase() : 'UNKNOWN'}
+                              </Badge>
+
+                              {serviceData.model_file && (
+                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
+                                  <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                                    {t("Active Model")}:
+                                  </p>
+                                  <p className="text-xs text-blue-600 dark:text-blue-400 font-mono break-all">
+                                    {serviceData.model_file}
+                                  </p>
+                                </div>
+                              )}
+
+                              {serviceData.error && (
+                                <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border border-red-200 dark:border-red-800">
+                                  <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
+                                    {t("Error Details")}:
+                                  </p>
+                                  <p className="text-xs text-red-600 dark:text-red-400 font-mono break-all">
+                                    {serviceData.error}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <p>{t("No service data available")}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -380,8 +410,8 @@ export function ChatBotOperationsDialog({
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue placeholder={
-                        mongoModelsList.length === 0 
-                          ? t("Load models from MongoDB first") 
+                        mongoModelsList.length === 0
+                          ? t("Load models from MongoDB first")
                           : t("Select model to send")
                       } />
                     </SelectTrigger>
@@ -465,8 +495,8 @@ export function ChatBotOperationsDialog({
                     >
                       <SelectTrigger className="flex-1">
                         <SelectValue placeholder={
-                          rasaModelsList.length === 0 
-                            ? t("Get models list first") 
+                          rasaModelsList.length === 0
+                            ? t("Get models list first")
                             : t("Select model to activate")
                         } />
                       </SelectTrigger>
@@ -527,8 +557,8 @@ export function ChatBotOperationsDialog({
                     </div>
                     <div className="space-y-2">
                       {actionsList.map((action) => (
-                        <div 
-                          key={action._id} 
+                        <div
+                          key={action._id}
                           className="flex items-start space-x-2 border-b pb-2"
                         >
                           <Checkbox
@@ -565,7 +595,7 @@ export function ChatBotOperationsDialog({
                   <p className="text-xs text-muted-foreground">
                     {t("Overwrite actions.py file in Rasa via Flask API. This syncs MongoDB actions to Rasa server.")}
                   </p>
-                  
+
                   <Select
                     value={pushActionModelId}
                     onValueChange={setPushActionModelId}
@@ -618,7 +648,7 @@ export function ChatBotOperationsDialog({
                     )}
                     {t("Push Actions to Rasa")}
                   </Button>
-                  
+
                   {actionsList.length === 0 && (
                     <p className="text-xs text-muted-foreground text-center">
                       {t("Get actions list first to push them to Rasa")}

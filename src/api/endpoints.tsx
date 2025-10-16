@@ -97,14 +97,14 @@ export default {
     GET_MODELS_LIST: (id: string) => `/api/v1/chatbot/${id}/models`,
     GET_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/actions`,
     HEALTH_CHECK: (id: string) => `/api/v1/chatbot/${id}/health`,
-    SEND_MODEL: (id: string) => `/api/v1/chatbot/${id}/send-model`,
-    RUN_MODEL: (id: string) => `/api/v1/chatbot/${id}/run-model`,
+    SEND_MODEL: (id: string) => `/api/v1/chatbot/${id}/send`,
+    RUN_MODEL: (id: string) => `/api/v1/chatbot/${id}/run`,
     PUSH_ACTION: (id: string) => `/api/v1/chatbot/${id}/push-action`,
     GET_MY_MODELS: (id: string) => `/api/v1/chatbot/${id}/my-models`,
-    GET_RASA_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/rasa-actions`,
-    RUN_ACTION: (id: string) => `/api/v1/chatbot/${id}/run-action`,
-    
-},
+    GET_RASA_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/actions`,
+    RUN_ACTION: (id: string) => `/api/v1/chatbot/${id}/run-actions`,
+
+  },
 
   STORY_ENDPOINTS: {
     GET_ALL_PAGINATED: "/api/v1/story",

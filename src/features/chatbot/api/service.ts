@@ -2,25 +2,25 @@
 
 import axiosInstance from "@/api/axios";
 import ENDPOINTS from "@/api/endpoints";
-import { 
-  ChatBot, 
-  ChatBotDetailResponse, 
+import {
+  ChatBot,
+  ChatBotDetailResponse,
   ListChatBotResponse,
   ModelsListResponse,
   ActionsListResponse,
-  HealthCheckResponse, 
-  SendModelResponse, 
-  RunModelResponse, 
+  HealthCheckResponse,
+  SendModelResponse,
+  RunModelResponse,
   PushActionResponse,
-  ModelDetail 
+  ModelDetail
 } from "./dto/ChatBotResponse";
-import { 
-  CreateChatBotRequest, 
-  UpdateChatBotRequest, 
-  SendModelRequest, 
-  RunModelRequest, 
+import {
+  CreateChatBotRequest,
+  UpdateChatBotRequest,
+  SendModelRequest,
+  RunModelRequest,
   PushActionRequest,
-  ChatBotQuery 
+  ChatBotQuery
 } from "./dto/ChatBotRequests";
 import { createChatBotQuery } from "./dto/ChatBotQuery";
 
@@ -69,7 +69,7 @@ export const chatBotService = {
 
   healthCheck: async (id: string): Promise<HealthCheckResponse> => {
     const response = await axiosInstance.get(ENDPOINTS.CHATBOT_ENDPOINTS.HEALTH_CHECK(id));
-    return response.data.data;
+    return response.data;
   },
 
   sendModel: async (id: string, data: SendModelRequest): Promise<SendModelResponse> => {
@@ -115,7 +115,7 @@ interface MyModelPaginateResponse {
 export const myModelService = {
   getPaginate: async (query: MyModelQuery): Promise<MyModelPaginateResponse> => {
     const params = new URLSearchParams();
-    
+
     if (query.page !== undefined) params.append("page", query.page.toString());
     if (query.limit !== undefined) params.append("limit", query.limit.toString());
     if (query.chatbotId) params.append("chatbotId", query.chatbotId);
@@ -126,7 +126,7 @@ export const myModelService = {
     if (query.startDate) params.append("startDate", query.startDate);
     if (query.endDate) params.append("endDate", query.endDate);
 
-    const response = await axiosInstance.get(`/my-model?${params.toString()}`);
+    const response = await axiosInstance.get(`api/v1/my-model?${params.toString()}`);
     return response.data;
   },
 };

@@ -149,5 +149,17 @@
   "Response already selected": "Response đã được chọn",
   "Select Response": "Chọn Response",
   "Search responses...": "Tìm kiếm response...",
-  "Include deleted responses": "Bao gồm response đã xóa"
+  "Include deleted responses": "Bao gồm response đã xóa",
+  "Running": "Đang chạy",
+  "Offline": "Ngoại tuyến",
+  "Not Responding": "Không phản hồi",
+  "service(s) offline": "dịch vụ ngoại tuyến",
+  "services online": "dịch vụ trực tuyến",
+  "All services are online": "Tất cả dịch vụ đang trực tuyến",
+  "Rasa Server": "Máy chủ Rasa",
+  "Actions Server": "Máy chủ Actions",
+  "Active Model": "Model đang hoạt động",
+  "Error Details": "Chi tiết lỗi",
+  "No service data available": "Không có dữ liệu dịch vụ",
+  "Click button above to check health status": "Nhấn nút ở trên để kiểm tra tình trạng hệ thống"
 }
