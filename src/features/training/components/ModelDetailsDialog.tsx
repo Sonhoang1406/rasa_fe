@@ -17,7 +17,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Download, Calendar, Tag } from "lucide-react";
+import { Loader2, /* Download, */ Calendar, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { trainingService } from "../api/service";
 import { IModel } from "@/interfaces/train.interface";
@@ -65,17 +65,18 @@ export function ModelDetailsDialog({
     return new Date(dateString).toLocaleString();
   };
 
-  const handleDownload = () => {
-    if (model?.url) {
-      // Create download link
-      const link = document.createElement('a');
-      link.href = model.url;
-      link.download = model.name || 'model';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+  // Temporarily disabled download function
+  // const handleDownload = () => {
+  //   if (model?.url) {
+  //     // Create download link
+  //     const link = document.createElement('a');
+  //     link.href = model.url;
+  //     link.download = model.name || 'model';
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //   }
+  // };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -227,7 +228,8 @@ export function ModelDetailsDialog({
 
             {/* Actions - Fixed at bottom */}
             <div className="flex-shrink-0 flex gap-2 justify-end pt-4 border-t mt-4">
-              {model.url && (
+              {/* Temporarily hidden download button */}
+              {/* {model.url && (
                 <Button
                   onClick={handleDownload}
                   className="bg-green-600 hover:bg-green-700"
@@ -235,7 +237,7 @@ export function ModelDetailsDialog({
                   <Download className="mr-2 h-4 w-4" />
                   {t("Download Model")}
                 </Button>
-              )}
+              )} */}
               <Button
                 variant="outline"
                 onClick={() => onOpenChange(false)}

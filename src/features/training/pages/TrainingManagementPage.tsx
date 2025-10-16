@@ -32,7 +32,7 @@ import {
   Train,
   SearchIcon,
   SlidersHorizontal,
-  Download,
+  // Download,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
@@ -410,7 +410,8 @@ export function TrainingManagementPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    {model.url && (
+{/* Temporarily hidden download button */}
+                    {/* {model.url && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -419,7 +420,7 @@ export function TrainingManagementPage() {
                       >
                         <Download className="h-4 w-4" />
                       </Button>
-                    )}
+                    )} */}
                   </div>
                 );
               },
