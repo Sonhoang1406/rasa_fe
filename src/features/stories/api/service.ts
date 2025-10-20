@@ -1,8 +1,8 @@
 import axiosInstance from "@/api/axios";
 import ENDPOINTS from "@/api/endpoints";
-import { 
-  StoryDetailResponse, 
-  ListStoryResponse, 
+import {
+  StoryDetailResponse,
+  ListStoryResponse,
   CreateStoryRequest,
   UpdateStoryRequest
 } from "./dto/StoryDto";
@@ -24,17 +24,8 @@ export const storyService = {
   },
 
   getStoryById: async (id: string): Promise<StoryDetailResponse> => {
-    try {
-      const response = await axiosInstance.get(ENDPOINTS.STORY_ENDPOINTS.GET_BY_ID(id));
-      return {
-        success: true,
-        message: "Story fetched successfully",
-        data: response.data
-      };
-    } catch (error: any) {
-      console.error("Error fetching story by ID:", error);
-      throw new Error(error?.response?.data?.message || "Failed to fetch story");
-    }
+    const response = await axiosInstance.get(ENDPOINTS.STORY_ENDPOINTS.GET_BY_ID(id));
+    return response.data;
   },
 
   createStory: async (data: CreateStoryRequest): Promise<IStory> => {
@@ -42,7 +33,7 @@ export const storyService = {
     return response.data.data;
   },
 
-  updateStory: async (id: string, data: Partial<UpdateStoryRequest>): Promise<IStory> => {
+  updateStory: async (id: string, data: UpdateStoryRequest): Promise<IStory> => {
     const response = await axiosInstance.put(ENDPOINTS.STORY_ENDPOINTS.UPDATE(id), data);
     return response.data.data;
   },

@@ -42,10 +42,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: Bot,
           hidden: false,
           items: [
-            // {
-            //   title: "Training",
-            //   url: "/training",
-            // },
+            {
+              title: "Training",
+              url: "/training",
+            },
             {
               title: "Intents",
               url: "/intents",
@@ -67,10 +67,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               url: "/rules",
             },
             { title: "Stories", url: "/stories" },
-            {
-              title: "Slots",
-              url: "/slots",
-            },
+            // {
+            //   title: "Slots",
+            //   url: "/slots",
+            // },
             {
               title: "Chat Bot",
               url: "/chat_bot",
