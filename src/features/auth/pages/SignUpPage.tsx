@@ -146,9 +146,9 @@ export function SignUpPage({
         <CardContent>
           <div className="mx-auto mb-6 w-[120px] h-[120px] p-2 items-center">
             <img
-              src="/logo.png"
+              src="/logo2.png"
               alt="Logo"
-              className="rounded-full object-cover"
+              className="rounded-xl object-cover"
             />
           </div>
           {displayError && (

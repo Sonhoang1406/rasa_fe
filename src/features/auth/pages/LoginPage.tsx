@@ -73,9 +73,9 @@ export function LoginPage({
           <div className="mx-auto mb-4 w-[160px] h-[160px] p-2 items-center">
             <AspectRatio ratio={1}>
               <img
-                src="/logo.png"
+                src="/logo2.png"
                 alt="Image"
-                className="rounded-md object-cover"
+                className="rounded-xl object-cover"
               />
             </AspectRatio>
           </div>

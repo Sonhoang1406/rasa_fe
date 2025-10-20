@@ -3,7 +3,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { AspectRatio } from "@radix-ui/react-aspect-ratio";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -36,17 +42,20 @@ export function ResetPasswordPage({
     }
 
     if (!id || !otp) {
-      toast.error("Thiếu thông tin xác thực. Vui lòng thực hiện lại quy trình quên mật khẩu!");
+      toast.error(
+        "Thiếu thông tin xác thực. Vui lòng thực hiện lại quy trình quên mật khẩu!"
+      );
       navigate("/auth/forgot-password");
       return;
     }
 
     try {
       setLoading(true);
-      await axiosInstance.post(
-        "/api/auth/reset-password",
-        { id, otp, password }
-      );
+      await axiosInstance.post("/api/auth/reset-password", {
+        id,
+        otp,
+        password,
+      });
 
       toast.success("Đặt lại mật khẩu thành công! Vui lòng đăng nhập.");
       navigate("/auth");
@@ -79,9 +88,9 @@ export function ResetPasswordPage({
           <div className="mx-auto mb-6 w-[120px] h-[120px]">
             <AspectRatio ratio={1}>
               <img
-                src="/logo.png"
+                src="/logo2.png"
                 alt="Logo"
-                className="rounded-md object-contain"
+                className="rounded-xl object-contain"
               />
             </AspectRatio>
           </div>

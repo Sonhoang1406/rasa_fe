@@ -101,7 +101,9 @@ export function EditStoryPage() {
           <p className="text-muted-foreground mb-4">
             {loadError || t("Story not found")}
           </p>
-          <Button onClick={() => navigate("/stories")}>{t("Back to Stories")}</Button>
+          <Button onClick={() => navigate("/stories")}>
+            {t("Back to Stories")}
+          </Button>
         </div>
       </div>
     );
@@ -123,7 +125,9 @@ export function EditStoryPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">{t("Edit Story")}</h1>
-            <p className="text-muted-foreground">{t("Edit RASA story")}: {story.name}</p>
+            <p className="text-muted-foreground">
+              {t("Edit RASA story")}: {story.name}
+            </p>
           </div>
         </div>
       </div>

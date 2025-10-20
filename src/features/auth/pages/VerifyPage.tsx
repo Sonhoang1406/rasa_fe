@@ -71,9 +71,9 @@ export function VerifyPage() {
           <div className="w-full max-w-md space-y-6">
             <div className="text-center space-y-2">
               <img
-                src="/logo.png"
+                src="/logo2.png"
                 alt="Logo"
-                className="h-32 w-32 mx-auto mb-10"
+                className="h-32 w-32 mx-auto mb-10 rounded-xl"
               />
               <h1 className="text-2xl font-bold tracking-tight">
                 Verify your account

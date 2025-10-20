@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { AspectRatio } from "@radix-ui/react-aspect-ratio";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -25,7 +31,7 @@ export function ForgotPasswordPage({
       const timer = setTimeout(() => setCooldown((prev) => prev - 1), 1000);
       return () => clearTimeout(timer);
     }
-  }, [cooldown])
+  }, [cooldown]);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,13 +44,12 @@ export function ForgotPasswordPage({
     }
 
     try {
-      const res = await forgotPassword({ email })
+      const res = await forgotPassword({ email });
       toast.success("OTP đã được gửi! Vui lòng kiểm tra email.");
-      setCooldown(30)
+      setCooldown(30);
       navigate("/auth/verify", {
         state: { email, token: res.accessToken, type: "forgot" },
       });
-
     } catch (err: any) {
       const message = err?.response?.data?.message;
 
@@ -54,20 +59,34 @@ export function ForgotPasswordPage({
         toast.error(message || "Gửi OTP thất bại! Vui lòng thử lại.");
       }
     }
-  }
+  };
 
   return (
-    <div className={cn("flex flex-col gap-6 items-center justify-center min-h-screen", className)} {...props}>
+    <div
+      className={cn(
+        "flex flex-col gap-6 items-center justify-center min-h-screen",
+        className
+      )}
+      {...props}
+    >
       <Card className="w-full max-w-md shadow-lg border rounded-2xl">
         <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-2xl font-semibold">Quên mật khẩu</CardTitle>
-          <CardDescription>Nhập email để nhận mã OTP đặt lại mật khẩu</CardDescription>
+          <CardTitle className="text-2xl font-semibold">
+            Quên mật khẩu
+          </CardTitle>
+          <CardDescription>
+            Nhập email để nhận mã OTP đặt lại mật khẩu
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
           <div className="mx-auto mb-6 w-[120px] h-[120px]">
             <AspectRatio ratio={1}>
-              <img src="/logo.png" alt="Logo" className="rounded-md object-contain" />
+              <img
+                src="/logo2.png"
+                alt="Logo"
+                className="rounded-xl object-contain"
+              />
             </AspectRatio>
           </div>
 
@@ -122,5 +141,5 @@ export function ForgotPasswordPage({
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
