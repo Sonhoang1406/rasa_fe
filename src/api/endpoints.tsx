@@ -103,7 +103,6 @@ export default {
     GET_MY_MODELS: (id: string) => `/api/v1/chatbot/${id}/my-models`,
     GET_RASA_ACTIONS_LIST: (id: string) => `/api/v1/chatbot/${id}/actions`,
     RUN_ACTION: (id: string) => `/api/v1/chatbot/${id}/run-actions`,
-
   },
 
   STORY_ENDPOINTS: {
@@ -130,5 +129,11 @@ export default {
     TRAIN_MODEL: (chatbotId: string) => `/api/v1/chatbot/${chatbotId}/train`,
     GET_MODELS: "/api/v1/my-model",
     GET_MODEL_BY_ID: (id: string) => `/api/v1/my-model/${id}`,
+  },
+
+  CHAT_ENDPOINTS: {
+    SEND_MESSAGE: (id: string) => `/api/v1/chatbot/${id}/chat`,
+    GET_CONVERSATIONS: (userId: string) =>
+      `/api/v1/conversation/user/${userId}`,
   },
 } as const;
