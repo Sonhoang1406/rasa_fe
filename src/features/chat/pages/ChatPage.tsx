@@ -1,9 +1,9 @@
-import { ChatLayout } from "@/features/chat/components/ChatLayout";
+import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 
 export function ChatPage() {
   return (
     <div className="h-screen">
-      <ChatLayout />
+      <HomeChatDemo />
     </div>
   );
 }

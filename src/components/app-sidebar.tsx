@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -15,11 +15,13 @@ import {
 import { Bot, MessageCircleCode, ShieldCheck, UserCog } from "lucide-react";
 import { NavMain } from "./nav-main";
 import { NavUser } from "./nav-user";
+import { ChatHistorySection } from "@/features/chat/components";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation();
   //   const user = useUserStore((state) => state.user);
   const navigate = useNavigate();
+  const location = useLocation();
 
   //   const infoUser = {
   //     name: user?.name || "",
@@ -147,11 +149,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         onClick={() => {
           navigate("/home_chat");
         }}
-        className="px-4 flex items-center py-3 cursor-pointer"
+        className="px-4 flex items-center py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
       >
         <div className="flex items-center gap-4">
           <img
-            src="/logo2.png"
+            src="/logo3.png"
             alt="@logo"
             className="h-10 w-10 rounded-full shadow-lg"
           />
@@ -180,7 +182,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
+
+        {/* Chat History Section */}
+        {/* {location.pathname === "/" || location.pathname === "/home_chat" ? (
+          <ChatHistorySection />
+        ) : null} */}
+
         <NavMain items={data.navMain} />
+        {location.pathname === "/" || location.pathname === "/home_chat" ? (
+          <ChatHistorySection />
+        ) : null}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

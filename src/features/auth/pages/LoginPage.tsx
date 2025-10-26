@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { authService } from "../api/service";
-import { FormEvent, use, useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Card,
   CardContent,
@@ -56,10 +55,6 @@ export function LoginPage({
     }
   };
 
-  const handleStayChat = () => {
-    navigate("/");
-  };
-
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -73,7 +68,7 @@ export function LoginPage({
           <div className="mx-auto mb-4 w-[160px] h-[160px] p-2 items-center">
             <AspectRatio ratio={1}>
               <img
-                src="/logo2.png"
+                src="/logo3.png"
                 alt="Image"
                 className="rounded-xl object-cover"
               />

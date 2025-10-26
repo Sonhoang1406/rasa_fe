@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export function VerifyPage() {
-  const { verify, isLoading, error } = useVerify();
+  const { verify, isLoading } = useVerify();
   const navigate = useNavigate();
   const location = useLocation();
   const { email, token, type } = location.state || {};
@@ -16,7 +16,6 @@ export function VerifyPage() {
   const [verificationStatus, setVerificationStatus] = useState<
     "idle" | "error" | "success"
   >("idle");
-  const [errorMessage, setErrorMessage] = useState("");
   const [popupMessage, setPopupMessage] = useState("");
   const [isPopupOpen, setIsPopupOpen] = useState(false);
 
@@ -25,7 +24,6 @@ export function VerifyPage() {
 
     if (!otp.trim()) {
       setVerificationStatus("error");
-      setErrorMessage("Verification code cannot be empty");
       setPopupMessage("Verification code cannot be empty");
       setIsPopupOpen(true);
       return;
@@ -71,7 +69,7 @@ export function VerifyPage() {
           <div className="w-full max-w-md space-y-6">
             <div className="text-center space-y-2">
               <img
-                src="/logo2.png"
+                src="/logo3.png"
                 alt="Logo"
                 className="h-32 w-32 mx-auto mb-10 rounded-xl"
               />

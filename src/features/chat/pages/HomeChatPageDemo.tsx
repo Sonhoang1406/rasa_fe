@@ -12,40 +12,33 @@ import {
   User,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { useChat, UseChatReturn } from "@/hooks/useChat";
+import { useChat } from "@/hooks/useChat";
 import { MessageActions } from "@/features/chat/components/MessageActions";
 import { ConversationExport } from "@/features/chat/components/ConversationExport";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import toast from "react-hot-toast";
+import { useChatContext } from "@/features/chat/context/ChatContext";
 
-interface HomeChatDemoProps {
-  conversationId?: string;
-  isNewChat?: boolean;
-  chatHook?: UseChatReturn;
-}
-
-export function HomeChatDemo({
-  conversationId,
-  isNewChat = true,
-  chatHook,
-}: HomeChatDemoProps = {}) {
+export function HomeChatDemo() {
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const userId = useCurrentUserId();
-
   const chatbotId = "68e22e6345898f7f46405ecc";
 
-  // Use provided chatHook or create new one
-  const defaultChatHook = useChat(chatbotId);
-  const { 
-    messages, 
-    loading, 
-    error, 
-    sendMessage, 
-    clearError, 
+  // Get chatHook from context or create default one
+  const contextChat = useChatContext();
+  const fallbackChatHook = useChat(chatbotId);
+  
+  const chatHook = contextChat.chatHook || fallbackChatHook;
+  const {
+    messages,
+    loading,
+    error,
+    sendMessage,
+    clearError,
     currentConversationId,
-    startNewConversation 
-  } = chatHook || defaultChatHook;
+    startNewConversation,
+  } = chatHook;
 
   // Auto scroll to bottom khi có tin nhắn mới
   useEffect(() => {
@@ -62,10 +55,10 @@ export function HomeChatDemo({
 
   // Khởi tạo conversation mới khi component mount và chưa có conversationId
   useEffect(() => {
-    if (isNewChat && !conversationId && !currentConversationId) {
+    if (contextChat.isNewChat && !contextChat.conversationId && !currentConversationId) {
       startNewConversation();
     }
-  }, [isNewChat, conversationId, currentConversationId, startNewConversation]);
+  }, [contextChat.isNewChat, contextChat.conversationId, currentConversationId, startNewConversation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -103,23 +96,23 @@ export function HomeChatDemo({
   const quickSuggestions = [
     {
       icon: Lightbulb,
-      text: "Giải thích về AI",
-      color: "from-blue-200 to-blue-300",
+      text: "Kiến thức PCCC",
+      color: "from-yellow-200 to-yellow-300",
     },
     {
       icon: Code,
-      text: "Viết code React",
-      color: "from-indigo-200 to-indigo-300",
+      text: "Hướng dẫn an toàn",
+      color: "from-red-200 to-red-300",
     },
     {
       icon: Palette,
-      text: "Ý tưởng sáng tạo",
-      color: "from-purple-200 to-purple-300",
+      text: "Phương pháp cứu hộ",
+      color: "from-orange-200 to-orange-300",
     },
     {
       icon: MessageSquare,
-      text: "Tóm tắt văn bản",
-      color: "from-teal-200 to-teal-300",
+      text: "Kế hoạch sơ tán",
+      color: "from-blue-200 to-blue-300",
     },
   ];
 
@@ -155,21 +148,21 @@ export function HomeChatDemo({
         <div className="max-w-4xl w-full flex flex-col gap-3 h-full justify-center py-2">
           {/* Header Section with Icon */}
           <div
-            className="text-center space-y-2"
+            className="text-center space-y-0.5"
             style={{
               animation: "fadeInUp 0.6s ease-out",
             }}
           >
             <div
-              className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-1 relative"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full mb-0 relative"
               style={{
                 background:
                   "linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.1))",
                 backdropFilter: "blur(10px)",
-                boxShadow: "0 4px 20px rgba(59, 130, 246, 0.1)",
+                boxShadow: "0 2px 12px rgba(59, 130, 246, 0.1)",
               }}
             >
-              <Sparkles className="h-8 w-8 text-blue-500" />
+              <Sparkles className="h-4 w-4 text-blue-500" />
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
@@ -179,15 +172,15 @@ export function HomeChatDemo({
               />
             </div>
             <h2
-              className="text-2xl md:text-3xl font-bold text-gray-700 mb-1"
+              className="text-sm font-bold text-gray-700"
               style={{
-                textShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                textShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
               }}
             >
               Tôi có thể giúp gì cho bạn?
             </h2>
-            <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
-              Trợ lý AI thông minh giúp bạn viết, phân tích và sáng tạo
+            <p className="text-xs text-gray-600 max-w-xs mx-auto">
+              Trợ lý AI phòng cháy chữa cháy
             </p>
           </div>
 
@@ -386,7 +379,7 @@ export function HomeChatDemo({
           </div>
 
           {/* Quick Suggestions Grid */}
-          {messages.length === 0 && isNewChat && (
+          {messages.length === 0 && contextChat.isNewChat && (
             <div
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 flex-shrink-0"
               style={{

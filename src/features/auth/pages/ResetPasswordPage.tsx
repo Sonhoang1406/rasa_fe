@@ -88,7 +88,7 @@ export function ResetPasswordPage({
           <div className="mx-auto mb-6 w-[120px] h-[120px]">
             <AspectRatio ratio={1}>
               <img
-                src="/logo2.png"
+                src="/logo3.png"
                 alt="Logo"
                 className="rounded-xl object-contain"
               />

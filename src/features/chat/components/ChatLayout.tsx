@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ChatSidebar } from "@/features/chat/components/ChatSidebar";
 import { HomeChatDemo } from "@/features/chat/pages/HomeChatPageDemo";
 import { useChat } from "@/hooks/useChat";
@@ -10,21 +9,17 @@ export function ChatLayout() {
   const userId = useCurrentUserId();
 
   const chatHook = useChat(chatbotId);
-  const { 
-    loadConversationHistory, 
-    startNewConversation, 
-    currentConversationId 
+  const {
+    loadConversationHistory,
+    startNewConversation,
+    currentConversationId,
   } = chatHook;
-  const [selectedConversation, setSelectedConversation] =
-    useState<IConversation | null>(null);
 
   const handleConversationSelect = (conversation: IConversation) => {
-    setSelectedConversation(conversation);
     loadConversationHistory(conversation);
   };
 
   const handleNewChat = () => {
-    setSelectedConversation(null);
     startNewConversation();
   };
 
@@ -37,11 +32,7 @@ export function ChatLayout() {
         onNewChat={handleNewChat}
       />
       <div className="flex-1">
-        <HomeChatDemo
-          conversationId={selectedConversation?.conversationId}
-          isNewChat={!selectedConversation}
-          chatHook={chatHook}
-        />
+        <HomeChatDemo />
       </div>
     </div>
   );
